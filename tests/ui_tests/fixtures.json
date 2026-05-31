@@ -40459,6 +40459,7 @@
 "T3W1_en_test_authenticate_device.py::test_authenticate_device_tropic[hello_world-1024]": "fd6c57e10b64ae0c1f964e0c5e2bd4bfc5b92d222a9370d51e9afefe37875b0d",
 "T3W1_en_test_authenticate_device.py::test_authenticate_device_tropic[hello_world-16]": "fd6c57e10b64ae0c1f964e0c5e2bd4bfc5b92d222a9370d51e9afefe37875b0d",
 "T3W1_en_test_authenticate_device.py::test_authenticate_device_unexpected": "fd6c57e10b64ae0c1f964e0c5e2bd4bfc5b92d222a9370d51e9afefe37875b0d",
+"T3W1_en_test_authenticate_device.py::test_certificate_subject_serial_numbers_match": "fd6c57e10b64ae0c1f964e0c5e2bd4bfc5b92d222a9370d51e9afefe37875b0d",
 "T3W1_en_test_autolock.py::test_apply_auto_lock_delay": "27c3e0de0fde6a010bba328fa8ac0ccda58e3d7faad43c32f521ac1a5306d934",
 "T3W1_en_test_autolock.py::test_apply_auto_lock_delay_out_of_range[0]": "c3ed9c0cfce604e341f0f0384f7ce044186240dd8ee993ced8766c3f4a9bb75c",
 "T3W1_en_test_autolock.py::test_apply_auto_lock_delay_out_of_range[1]": "c3ed9c0cfce604e341f0f0384f7ce044186240dd8ee993ced8766c3f4a9bb75c",
