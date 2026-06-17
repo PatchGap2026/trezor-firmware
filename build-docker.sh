@@ -217,7 +217,7 @@ fi  # init
 # append common part to script
 cat <<EOF >> "$SCRIPT_NAME"
   $GIT_CLEAN_REPO
-  git submodule update --init --recursive
+  git submodule update --init --recursive --depth 1
   uv sync --locked
   cd core/embed/rust
   cargo fetch
@@ -284,11 +284,16 @@ for TREZOR_MODEL in ${MODELS[@]}; do
       rm -rf /build/*
       uv run make clean vendor $MAKE_TARGETS QUIET_MODE=1
       for item in bootloader secmon kernel firmware prodtest; do
-        if [ -s build-xtask/artifacts/$TREZOR_MODEL/\$item.bin ]; then
-          uv run ../python/tools/firmware-fingerprint.py \
-                      -o build-xtask/artifacts/$TREZOR_MODEL/\$item.bin.fingerprint \
-                      build-xtask/artifacts/$TREZOR_MODEL/\$item.bin \
-                      || echo "No fingerprint for build-xtask/artifacts/$TREZOR_MODEL/\$item.bin"
+        # Append the labeled fingerprint, preceded by '# <artifact name>'.
+        if [ "\$item" != kernel ] && [ -s build-xtask/artifacts/$TREZOR_MODEL/\$item.bin ]; then
+          src=\$(ls build-xtask/artifacts/pub/\$item-$TREZOR_MODEL*.bin 2>/dev/null | head -n1 || true)
+          src=\${src##*/}
+          {
+            echo "# core${DIRSUFFIX}/\$item/\${src:-\$item.bin}"
+            uv run ../python/tools/firmware-fingerprint.py \
+                build-xtask/artifacts/$TREZOR_MODEL/\$item.bin
+            echo
+          } >> /local/build/${COMMIT_HASH}.fingerprints
         fi
         if [ -f build-xtask/artifacts/$TREZOR_MODEL/\$item.elf ]; then
           # copy only the artifacts to the build output directory
@@ -298,7 +303,16 @@ for TREZOR_MODEL in ${MODELS[@]}; do
           cp -v build-xtask/artifacts/pub/\$item-$TREZOR_MODEL-*.bin /build/\$item/ || true  # n/a for kernel
         fi
       done
+      # Recompute the master fingerprint over everything accumulated so far.
+      # The last build leaves the final value.
+      if [ -f /local/build/${COMMIT_HASH}.fingerprints ]; then
+        uv run ../python/tools/master-fingerprint.py \
+            /local/build/${COMMIT_HASH}.fingerprints \
+            > /local/build/${COMMIT_HASH}.master
+      fi
       chown -R $USER:$GROUP /build
+      chown $USER:$GROUP /local/build/${COMMIT_HASH}.fingerprints \
+                         /local/build/${COMMIT_HASH}.master 2>/dev/null || true
 EOF
 
     echo
@@ -454,10 +468,19 @@ if echo "${MODELS[@]}" | grep -q T1B1 ; then
       cp firmware/trezor.bin build/firmware/firmware.bin
       cp firmware/firmware*.bin build/firmware/ || true  # ignore missing file as it will not be present in old tags
       cp firmware/trezor.elf build/firmware/firmware.elf
-      uv run ../python/tools/firmware-fingerprint.py \
-                 -o build/firmware/firmware.bin.fingerprint \
-                 build/firmware/firmware.bin
+      src=\$(ls build/firmware/firmware-T1B1*.bin 2>/dev/null | head -n1 || true)
+      src=\${src##*/}
+      {
+        echo "# legacy${DIRSUFFIX}/firmware/\${src:-firmware.bin}"
+        uv run ../python/tools/firmware-fingerprint.py build/firmware/firmware.bin
+        echo
+      } >> /local/build/${COMMIT_HASH}.fingerprints
+      uv run ../python/tools/master-fingerprint.py \
+          /local/build/${COMMIT_HASH}.fingerprints \
+          > /local/build/${COMMIT_HASH}.master
       chown -R $USER:$GROUP /build
+      chown $USER:$GROUP /local/build/${COMMIT_HASH}.fingerprints \
+                         /local/build/${COMMIT_HASH}.master 2>/dev/null || true
 EOF
 
     echo
@@ -487,29 +510,29 @@ echo "  docker rmi $SNAPSHOT_NAME"
 echo
 echo "Built from commit $COMMIT_HASH"
 echo
-echo "Fingerprints:"
 
-# Display core and legacy fingerprints (if built)
-for VARIANT in core legacy; do
-  for MODEL in ${MODELS[@]}; do
-    for DIRSUFFIX in "" "-bitcoinonly" $DIRSUFFIX_OVERRIDE; do
-      BUILD_DIR=build/${VARIANT}-${MODEL}${DIRSUFFIX}
-      for file in $BUILD_DIR/*/*.fingerprint; do
-        if [ -f "$file" ]; then
-          origfile="${file%.fingerprint}"
-          fingerprint=$(tr -d '\n' < $file)
-          chunkified_fingerprint=$(echo "$fingerprint" | sed 's/.\{4\}/& /g')
-          echo -e "\033[1m$chunkified_fingerprint\033[0m $origfile"
-        fi
-      done
-    done
-  done
-done
+FINGERPRINTS_FILE="build/${COMMIT_HASH}.fingerprints"
+MASTER_FILE="build/${COMMIT_HASH}.master"
+if [ -f "$FINGERPRINTS_FILE" ]; then
+  echo "Fingerprints ($FINGERPRINTS_FILE):"
+  echo
+  cat "$FINGERPRINTS_FILE"
+  if [ -f "$MASTER_FILE" ]; then
+    cat "$MASTER_FILE"
+  else
+    echo "(master not computed; run: master-fingerprint.py $FINGERPRINTS_FILE)"
+  fi
+else
+  echo "(no core/legacy firmware images built)"
+fi
 
-# Display nRF fingerprints (if built)
+# nRF fingerprints (if built) use a plain sha256 of the whole binary and are not
+# part of the labeled fingerprints file.
 if [ "$OPT_BUILD_NRF" -eq 1 ]; then
   NRF_BUILD_DIR=build/nrf
   if [ -d "$NRF_BUILD_DIR" ]; then
+    echo
+    echo "nRF fingerprints:"
     for file in $NRF_BUILD_DIR/firmware/*.fingerprint $NRF_BUILD_DIR/bootloader/*.fingerprint; do
       if [ -f "$file" ]; then
         origfile="${file%.fingerprint}"
