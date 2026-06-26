@@ -919,8 +919,8 @@ static void prodtest_tropic_pair(cli_t* cli) {
   }
 
   if (!tropic_is_paired(cli)) {
-    cli_error(cli, CLI_ERROR, "`tropic-pair` must be called first.");
-    return;
+    cli_error(cli, CLI_ERROR, "`tropic_is_paired()` failed.");
+    goto cleanup;
   }
 
   cli_ok(cli, "");
