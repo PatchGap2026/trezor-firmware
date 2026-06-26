@@ -72,12 +72,6 @@ typedef enum {
 static tropic_handshake_state_t g_tropic_handshake_state =
     TROPIC_HANDSHAKE_STATE_0;
 
-typedef enum {
-  TROPIC_PAIRING_STATE_PAIRED,
-  TROPIC_PAIRING_STATE_NOT_PAIRED,
-  TROPIC_PAIRING_STATE_ERROR,
-} tropic_pairing_state_t;
-
 // TODO: Update this link to correspond with the latest chip revision when it
 // becomes available.
 // https://github.com/tropicsquare/tropic01/blob/da459d18db7aea107419035b9cdf316d89a73445/doc/api/tropic01_user_api_v1.1.2.pdf
