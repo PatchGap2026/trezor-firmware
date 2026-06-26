@@ -105,23 +105,49 @@ def linkify_gh_diff(changelog_file: Path, tag_prefix: str) -> None:
                 linkified = True
 
 
-def current_date(project: Path) -> str:
-    parts = project.parts
-    today = datetime.datetime.now()
+def _expected_day_suffix(day: int) -> str:
+    if 11 <= day <= 13:
+        return "th"
+    return {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
 
-    if (
-        parts[-3:] == ("core", "embed", "boardloader")
-        or parts[-3:] == ("core", "embed", "bootloader")
-        or parts[-3:] == ("core", "embed", "bootloader_ci")
-        or parts[-2:] == ("legacy", "bootloader")
-        or parts[-2:] == ("legacy", "intermediate_fw")
-    ):
-        return today.strftime("%B %Y")
-    elif parts[-1] == "python":
-        return today.strftime("%Y-%m-%d")
-    else:
-        daysuffix = {1: "st", 2: "nd", 3: "rd"}.get(today.day % 10, "th")
-        return today.strftime(f"%-d{daysuffix} %B %Y")
+
+def validate_date(date: str, project: Path) -> None:
+    _MONTHS = (
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    )
+    _DATE_DAY_SUFFIX_RE = re.compile(
+        r"^(\d{1,2})(st|nd|rd|th) (" + "|".join(_MONTHS) + r") \d{4}$"
+    )
+    m = _DATE_DAY_SUFFIX_RE.match(date)
+    if not m:
+        raise click.BadParameter(
+            "Expected format: '18th March 2026'.", param_hint="'--date'"
+        )
+    day = int(m.group(1))
+    suffix = m.group(2)
+    expected_suffix = _expected_day_suffix(day)
+    if suffix != expected_suffix:
+        raise click.BadParameter(
+            f"Invalid day suffix '{day}{suffix}', expected '{day}{expected_suffix}'.",
+            param_hint="'--date'",
+        )
+
+
+def current_date(project: Path) -> str:
+    today = datetime.datetime.now()
+    daysuffix = _expected_day_suffix(today.day)
+    return today.strftime(f"%-d{daysuffix} %B %Y")
 
 
 def filter_changelog(changelog_file: Path, internal_name: str) -> None:
@@ -282,6 +308,8 @@ def generate(
 
     if date is None:
         date = current_date(project)
+    else:
+        validate_date(date, project)
 
     if only_models:
         generate_filtered(project, changelog)
