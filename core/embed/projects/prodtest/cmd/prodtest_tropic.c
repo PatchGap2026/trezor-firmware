@@ -730,19 +730,18 @@ static lt_ret_t pairing_key_write(cli_t* cli, lt_handle_t* handle,
   return LT_OK;
 }
 
-static tropic_pairing_state_t tropic_is_paired(cli_t* cli) {
+static bool tropic_is_paired(cli_t* cli) {
   static bool is_paired = false;
   if (is_paired) {
-    return TROPIC_PAIRING_STATE_PAIRED;
+    return true;
   }
 
   lt_ret_t ret = LT_FAIL;
   lt_handle_t* tropic_handle = NULL;
   ret = tropic_prodtest_get_handle(cli, &tropic_handle);
   if (ret != LT_OK) {
-    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
-              lt_ret_verbose(ret));
-    return TROPIC_PAIRING_STATE_ERROR;
+    cli_trace(cli, "Tropic setup failed with error '%s'", lt_ret_verbose(ret));
+    return false;
   }
 
   // Try to establish a session using the unprivileged key pair.
@@ -789,8 +788,7 @@ static tropic_pairing_state_t tropic_is_paired(cli_t* cli) {
   is_paired = true;
 
 cleanup:
-  return is_paired ? TROPIC_PAIRING_STATE_PAIRED
-                   : TROPIC_PAIRING_STATE_NOT_PAIRED;
+  return is_paired;
 }
 
 static void prodtest_tropic_pair(cli_t* cli) {
@@ -926,14 +924,9 @@ static void prodtest_tropic_pair(cli_t* cli) {
     }
   }
 
-  switch (tropic_is_paired(cli)) {
-    case TROPIC_PAIRING_STATE_ERROR:
-      goto cleanup;
-    case TROPIC_PAIRING_STATE_NOT_PAIRED:
-      cli_error(cli, CLI_ERROR, "`tropic_is_paired()` failed.");
-      goto cleanup;
-    case TROPIC_PAIRING_STATE_PAIRED:
-      break;
+  if (!tropic_is_paired(cli)) {
+    cli_error(cli, CLI_ERROR, "`tropic-pair` must be called first.");
+    return;
   }
 
   cli_ok(cli, "");
@@ -1066,14 +1059,9 @@ static void prodtest_tropic_handshake(cli_t* cli) {
     return;
   }
 
-  switch (tropic_is_paired(cli)) {
-    case TROPIC_PAIRING_STATE_ERROR:
-      return;
-    case TROPIC_PAIRING_STATE_NOT_PAIRED:
-      cli_error(cli, CLI_ERROR, "`tropic-pair` must be called first.");
-      return;
-    case TROPIC_PAIRING_STATE_PAIRED:
-      break;
+  if (!tropic_is_paired(cli)) {
+    cli_error(cli, CLI_ERROR, "`tropic-pair` must be called first.");
+    return;
   }
 
   uint8_t input[35] = {0};  // 35 is the expected size of the handshake request
@@ -1258,25 +1246,20 @@ static void prodtest_tropic_send_command(cli_t* cli) {
 
 static void prodtest_tropic_lock(cli_t* cli) {
   // This function is:
-  //   * idempotent (it can be called multiple times without changing the state
-  //   of the device),
+  //   * idempotent (it can be called multiple times without changing the
+  //   state of the device),
   //   * irreversible (it cannot be undone),
-  //   * self-recovering (if the device is powered off during execution, it can
-  //   be called again to continue from where it left off).
+  //   * self-recovering (if the device is powered off during execution, it
+  //   can be called again to continue from where it left off).
 
   if (cli_arg_count(cli) > 0) {
     cli_error_arg_count(cli);
     return;
   }
 
-  switch (tropic_is_paired(cli)) {
-    case TROPIC_PAIRING_STATE_ERROR:
-      return;
-    case TROPIC_PAIRING_STATE_NOT_PAIRED:
-      cli_error(cli, CLI_ERROR, "`tropic-pair` must be called first.");
-      return;
-    case TROPIC_PAIRING_STATE_PAIRED:
-      break;
+  if (!tropic_is_paired(cli)) {
+    cli_error(cli, CLI_ERROR, "`tropic-pair` must be called first.");
+    return;
   }
 
   g_tropic_handshake_state = TROPIC_HANDSHAKE_STATE_0;
