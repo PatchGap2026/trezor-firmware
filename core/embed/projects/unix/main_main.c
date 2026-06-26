@@ -92,7 +92,7 @@ static void drivers_init(void) {
 #endif
 
 #ifdef USE_TROPIC
-  tropic_init();
+  tropic_init(NULL);
 #endif
 
   usb_configure(NULL);

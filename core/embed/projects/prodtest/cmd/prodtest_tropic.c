@@ -45,22 +45,21 @@
 
 #include "secure_channel.h"
 
-static bool tropic_get_handle_or_report(cli_t* cli, lt_handle_t** handle) {
+static lt_ret_t tropic_prodtest_get_handle(cli_t* cli, lt_handle_t** handle) {
+  lt_ret_t ret = tropic_init(cli);
+  if (ret != LT_OK) {
+    return ret;
+  }
+  if (!tropic_wait_for_ready(cli)) {
+    return LT_FAIL;
+  }
+
   *handle = tropic_get_handle();
   if (*handle != NULL) {
-    return true;
+    return LT_OK;
   }
 
-  lt_ret_t init_ret = LT_OK;
-  if (tropic_get_init_error(&init_ret)) {
-    cli_error(cli, CLI_ERROR,
-              "Tropic is not initialized: lt_init() failed with error '%s'",
-              lt_ret_verbose(init_ret));
-  } else {
-    cli_error(cli, CLI_ERROR, "Tropic is not initialized");
-  }
-
-  return false;
+  return LT_FAIL;
 }
 
 typedef enum {
@@ -509,11 +508,14 @@ static void prodtest_tropic_get_riscv_fw_version(cli_t* cli) {
   }
 
   lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  lt_ret_t ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(ret));
     return;
   }
   uint8_t version[TR01_L2_GET_INFO_RISCV_FW_SIZE] = {0};
-  lt_ret_t ret = lt_get_info_riscv_fw_ver(tropic_handle, version);
+  ret = lt_get_info_riscv_fw_ver(tropic_handle, version);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR,
               "lt_get_info_riscv_fw_ver() failed with error '%s'",
@@ -532,11 +534,14 @@ static void prodtest_tropic_get_spect_fw_version(cli_t* cli) {
   }
 
   lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  lt_ret_t ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(ret));
     return;
   }
   uint8_t version[TR01_L2_GET_INFO_SPECT_FW_SIZE];
-  lt_ret_t ret = lt_get_info_spect_fw_ver(tropic_handle, version);
+  ret = lt_get_info_spect_fw_ver(tropic_handle, version);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR,
               "lt_get_info_spect_fw_ver() failed with error '%s'",
@@ -555,11 +560,14 @@ static void prodtest_tropic_get_chip_id(cli_t* cli) {
   }
 
   lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  lt_ret_t ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(ret));
     return;
   }
   struct lt_chip_id_t chip_id;
-  lt_ret_t ret = lt_get_info_chip_id(tropic_handle, &chip_id);
+  ret = lt_get_info_chip_id(tropic_handle, &chip_id);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR, "lt_get_info_chip_id() failed with error '%s'",
               lt_ret_verbose(ret));
@@ -577,6 +585,17 @@ static void prodtest_tropic_get_chip_id(cli_t* cli) {
 static void prodtest_tropic_certtropic_read(cli_t* cli) {
   if (cli_arg_count(cli) > 0) {
     cli_error_arg_count(cli);
+    return;
+  }
+
+  lt_ret_t init_ret = tropic_init(cli);
+  if (init_ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(init_ret));
+    return;
+  }
+  if (!tropic_wait_for_ready(cli)) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed");
     return;
   }
 
@@ -618,7 +637,10 @@ tropic_locked_status get_tropic_locked_status(cli_t* cli) {
 
   lt_ret_t ret = LT_FAIL;
   lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(ret));
     return TROPIC_LOCKED_ERROR;
   }
 
@@ -636,8 +658,7 @@ tropic_locked_status get_tropic_locked_status(cli_t* cli) {
                 "midway.");
       return TROPIC_LOCKED_FALSE;
     } else {
-      cli_error(cli, CLI_ERROR,
-                "`tropic_custom_session_start()` failed with error '%s'",
+      cli_error(cli, CLI_ERROR, "Tropic session setup failed with error '%s'",
                 lt_ret_verbose(ret));
       return TROPIC_LOCKED_ERROR;
     }
@@ -717,7 +738,10 @@ static tropic_pairing_state_t tropic_is_paired(cli_t* cli) {
 
   lt_ret_t ret = LT_FAIL;
   lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(ret));
     return TROPIC_PAIRING_STATE_ERROR;
   }
 
@@ -725,9 +749,7 @@ static tropic_pairing_state_t tropic_is_paired(cli_t* cli) {
   ret = tropic_custom_session_start(cli, TROPIC_UNPRIVILEGED_PAIRING_KEY_SLOT);
   if (ret != LT_OK) {
     cli_trace(
-        cli,
-        "`tropic_custom_session_start()` for unprivileged key failed with "
-        "error '%s'",
+        cli, "Tropic session setup for unprivileged key failed with error '%s'",
         lt_ret_verbose(ret));
     goto cleanup;
   }
@@ -736,8 +758,7 @@ static tropic_pairing_state_t tropic_is_paired(cli_t* cli) {
   ret = tropic_custom_session_start(cli, TROPIC_PRIVILEGED_PAIRING_KEY_SLOT);
   if (ret != LT_OK) {
     cli_trace(cli,
-              "`tropic_custom_session_start()` for privileged key failed "
-              "with error '%s'",
+              "Tropic session setup for privileged key failed with error '%s'",
               lt_ret_verbose(ret));
     goto cleanup;
   }
@@ -797,7 +818,10 @@ static void prodtest_tropic_pair(cli_t* cli) {
   g_tropic_handshake_state = TROPIC_HANDSHAKE_STATE_0;
 
   lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  lt_ret_t ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(ret));
     goto cleanup;
   }
 
@@ -859,9 +883,9 @@ static void prodtest_tropic_pair(cli_t* cli) {
       LT_OK) {
     // Write the privileged pairing key to the tropic's pairing key slot if it
     // has not been written yet.
-    lt_ret_t ret = pairing_key_write(cli, tropic_handle,
-                                     TROPIC_PRIVILEGED_PAIRING_KEY_SLOT,
-                                     privileged_public);
+    ret = pairing_key_write(cli, tropic_handle,
+                            TROPIC_PRIVILEGED_PAIRING_KEY_SLOT,
+                            privileged_public);
     // If the pairing key has already been written, `pairing_key_write()`
     // returns `LT_OK`.
     if (ret != LT_OK) {
@@ -932,6 +956,18 @@ static void prodtest_tropic_get_access_credential(cli_t* cli) {
   if (secret_key_tropic_pairing_unprivileged(unprivileged_private) != sectrue) {
     cli_error(cli, CLI_ERROR,
               "`secret_key_tropic_pairing_unprivileged()` failed.");
+    goto cleanup;
+  }
+
+  lt_ret_t ret = tropic_init(cli);
+  if (ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(ret));
+    goto cleanup;
+  }
+  if (!tropic_wait_for_ready(cli)) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(LT_FAIL));
     goto cleanup;
   }
 
@@ -1057,7 +1093,10 @@ static void prodtest_tropic_handshake(cli_t* cli) {
   }
 
   lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  lt_ret_t setup_ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (setup_ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(setup_ret));
     return;
   }
 
@@ -1166,7 +1205,10 @@ static void prodtest_tropic_send_command(cli_t* cli) {
   }
 
   lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  lt_ret_t setup_ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (setup_ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(setup_ret));
     return;
   }
 
@@ -1240,21 +1282,24 @@ static void prodtest_tropic_lock(cli_t* cli) {
   g_tropic_handshake_state = TROPIC_HANDSHAKE_STATE_0;
   lt_ret_t ret = LT_FAIL;
 
-  ret = tropic_custom_session_start(cli, TROPIC_PRIVILEGED_PAIRING_KEY_SLOT);
+  struct lt_config_t configuration_read = {0};
+
+  lt_handle_t* tropic_handle = NULL;
+  ret = tropic_prodtest_get_handle(cli, &tropic_handle);
   if (ret != LT_OK) {
-    cli_error(cli, CLI_ERROR,
-              "`tropic_custom_session_start()` for privileged key failed with "
-              "error '%s'",
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
               lt_ret_verbose(ret));
     return;
   }
 
-  struct lt_config_t configuration_read = {0};
-
-  lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  ret = tropic_custom_session_start(cli, TROPIC_PRIVILEGED_PAIRING_KEY_SLOT);
+  if (ret != LT_OK) {
+    cli_error(cli, CLI_ERROR,
+              "Tropic session setup for privileged key failed with error '%s'",
+              lt_ret_verbose(ret));
     return;
   }
+
   ret = lt_r_config_erase(tropic_handle);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR, "`lt_r_config_erase()` failed with error '%s'",
@@ -1412,12 +1457,15 @@ static bool check_device_cert_chain(cli_t* cli, const uint8_t* chain,
   ed25519_signature signature = {0};
 
   lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  lt_ret_t ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(ret));
     return false;
   }
 
-  lt_ret_t ret = lt_ecc_eddsa_sign(tropic_handle, TROPIC_DEVICE_KEY_SLOT,
-                                   challenge, sizeof(challenge), signature);
+  ret = lt_ecc_eddsa_sign(tropic_handle, TROPIC_DEVICE_KEY_SLOT, challenge,
+                          sizeof(challenge), signature);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR, "`lt_ecc_eddsa_sign()` failed with error '%s'",
               lt_ret_verbose(ret));
@@ -1452,12 +1500,18 @@ static void cert_write(cli_t* cli, uint16_t first_slot, uint16_t slots_count) {
 
   g_tropic_handshake_state = TROPIC_HANDSHAKE_STATE_0;
 
-  lt_ret_t ret =
-      tropic_custom_session_start(cli, TROPIC_PRIVILEGED_PAIRING_KEY_SLOT);
+  lt_handle_t* tropic_handle = NULL;
+  lt_ret_t ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(ret));
+    return;
+  }
+
+  ret = tropic_custom_session_start(cli, TROPIC_PRIVILEGED_PAIRING_KEY_SLOT);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR,
-              "`tropic_custom_session_start()` for privileged key failed with "
-              "error '%s'",
+              "Tropic session setup for privileged key failed with error '%s'",
               lt_ret_verbose(ret));
     return;
   }
@@ -1468,10 +1522,6 @@ static void cert_write(cli_t* cli, uint16_t first_slot, uint16_t slots_count) {
     return;
   }
 
-  lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
-    return;
-  }
   ret = data_write(tropic_handle, first_slot, slots_count, certificate,
                    certificate_length);
   if (ret != LT_OK) {
@@ -1507,19 +1557,21 @@ static void cert_read(cli_t* cli, uint16_t first_slot, uint16_t slots_count) {
   g_tropic_handshake_state = TROPIC_HANDSHAKE_STATE_0;
   lt_ret_t ret = LT_FAIL;
 
-  ret = tropic_custom_session_start(cli, TROPIC_PRIVILEGED_PAIRING_KEY_SLOT);
+  uint8_t certificate[TROPIC_SLOT_MAX_SIZE_V1 * slots_count];
+  size_t certificate_length = 0;
+  lt_handle_t* tropic_handle = NULL;
+  ret = tropic_prodtest_get_handle(cli, &tropic_handle);
   if (ret != LT_OK) {
-    cli_error(cli, CLI_ERROR,
-              "`tropic_custom_session_start()` for privileged key failed with "
-              "error '%s'",
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
               lt_ret_verbose(ret));
     return;
   }
 
-  uint8_t certificate[TROPIC_SLOT_MAX_SIZE_V1 * slots_count];
-  size_t certificate_length = 0;
-  lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  ret = tropic_custom_session_start(cli, TROPIC_PRIVILEGED_PAIRING_KEY_SLOT);
+  if (ret != LT_OK) {
+    cli_error(cli, CLI_ERROR,
+              "Tropic session setup for privileged key failed with error '%s'",
+              lt_ret_verbose(ret));
     return;
   }
 
@@ -1559,20 +1611,22 @@ static void pubkey_read(cli_t* cli, lt_ecc_slot_t slot,
 
   lt_ret_t ret = LT_FAIL;
 
-  ret = tropic_custom_session_start(cli, TROPIC_PRIVILEGED_PAIRING_KEY_SLOT);
-  if (ret != LT_OK) {
-    cli_error(cli, CLI_ERROR,
-              "`tropic_custom_session_start()` for privileged key failed with "
-              "error '%s'",
-              lt_ret_verbose(ret));
-    return;
-  }
-
   uint8_t public_key[ECDSA_PUBLIC_KEY_SIZE] = {0x04};
   lt_ecc_curve_type_t curve_type = 0;
   lt_ecc_key_origin_t origin = 0;
   lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(ret));
+    return;
+  }
+
+  ret = tropic_custom_session_start(cli, TROPIC_PRIVILEGED_PAIRING_KEY_SLOT);
+  if (ret != LT_OK) {
+    cli_error(cli, CLI_ERROR,
+              "Tropic session setup for privileged key failed with error '%s'",
+              lt_ret_verbose(ret));
     return;
   }
 
@@ -1623,7 +1677,10 @@ static void prodtest_tropic_update_fw(cli_t* cli) {
   }
 
   lt_handle_t* h = NULL;
-  if (!tropic_get_handle_or_report(cli, &h)) {
+  lt_ret_t setup_ret = tropic_prodtest_get_handle(cli, &h);
+  if (setup_ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(setup_ret));
     return;
   }
   lt_chip_id_t chip_id = {0};
@@ -1779,15 +1836,14 @@ static void prodtest_tropic_stress_test(cli_t* cli) {
 
   // test Tropic gets initialized
   for (int i = 0; i < init_iterations; i++) {
-    tropic_deinit();
-    if (!tropic_init()) {
-      if (tropic_get_init_error(&res)) {
-        cli_error(cli, CLI_ERROR,
-                  "Call #%d of `tropic_init()` failed with error '%s'", i + 1,
-                  lt_ret_verbose(res));
-      } else {
-        cli_error(cli, CLI_ERROR, "Call #%d of `tropic_init()` failed", i + 1);
-      }
+    if (i != 0) {
+      tropic_deinit();
+    }
+    res = tropic_init(cli);
+    if (res != LT_OK) {
+      cli_error(cli, CLI_ERROR,
+                "Call #%d of `tropic_init()` failed with error '%s'", i + 1,
+                lt_ret_verbose(res));
       return;
     }
     if (!tropic_wait_for_ready(cli)) {
@@ -1808,10 +1864,9 @@ static void prodtest_tropic_stress_test(cli_t* cli) {
       break;
     }
     if (res != LT_L2_HSK_ERR) {
-      cli_error(
-          cli, CLI_ERROR,
-          "`tropic_custom_session_start() for key %d failed with error '%s'", i,
-          lt_ret_verbose(res));
+      cli_error(cli, CLI_ERROR,
+                "Tropic session setup for key %d failed with error '%s'", i,
+                lt_ret_verbose(res));
       return;
     }
   }
@@ -1836,15 +1891,17 @@ static void prodtest_tropic_stress_test(cli_t* cli) {
     res = tropic_custom_session_start(cli, pairing_key_index);
     if (res != LT_OK) {
       cli_error(cli, CLI_ERROR,
-                "Call #%d of `tropic_custom_session_start()"
-                "failed with error '%s'",
+                "Call #%d of Tropic session setup failed with error '%s'",
                 i + 1, lt_ret_verbose(res));
       return;
     }
   }
 
   lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  res = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (res != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(res));
     return;
   }
 
@@ -1979,15 +2036,19 @@ static void prodtest_tropic_erase_all_slots(cli_t* cli) {
     return;
   }
 
+  lt_handle_t* tropic_handle = NULL;
+  lt_ret_t setup_ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (setup_ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(setup_ret));
+    return;
+  }
+
   if (!privileged_session_start(cli)) {
     cli_error(cli, CLI_ERROR, "`privileged_session_start()` failed.");
     return;
   }
 
-  lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
-    return;
-  }
   lt_ret_t ret = tropic_erase_all_slots_internal(cli, tropic_handle);
   if (ret == LT_OK) {
     cli_ok(cli, "");
@@ -2022,13 +2083,16 @@ static void prodtest_tropic_set_sensors(cli_t* cli) {
       ((uint32_t)input[0] << 24) | ((uint32_t)input[1] << 16) |
       ((uint32_t)input[2] << 8) | ((uint32_t)input[3]);
 
-  if (!privileged_session_start(cli)) {
-    cli_error(cli, CLI_ERROR, "`privileged_session_start()` failed.");
+  lt_handle_t* tropic_handle = NULL;
+  lt_ret_t setup_ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (setup_ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(setup_ret));
     return;
   }
 
-  lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  if (!privileged_session_start(cli)) {
+    cli_error(cli, CLI_ERROR, "`privileged_session_start()` failed.");
     return;
   }
 
@@ -2083,7 +2147,10 @@ static void prodtest_tropic_read_sensors(cli_t* cli) {
   }
 
   lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  lt_ret_t setup_ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (setup_ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(setup_ret));
     return;
   }
 
@@ -2112,7 +2179,10 @@ static void prodtest_tropic_read_configs(cli_t* cli) {
   }
 
   lt_handle_t* tropic_handle = NULL;
-  if (!tropic_get_handle_or_report(cli, &tropic_handle)) {
+  lt_ret_t setup_ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  if (setup_ret != LT_OK) {
+    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
+              lt_ret_verbose(setup_ret));
     return;
   }
 

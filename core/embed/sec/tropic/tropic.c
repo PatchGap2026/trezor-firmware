@@ -67,7 +67,7 @@
 #else
 #define TROPIC_MAX_RETRIES 10
 
-bool tropic_session_start(void);
+bool tropic_session_start(cli_t *cli);
 
 static bool is_retryable(lt_ret_t ret) {
   return ret == LT_L1_CHIP_ALARM_MODE || ret == LT_L1_SPI_ERROR ||
@@ -91,7 +91,7 @@ static bool is_retryable(lt_ret_t ret) {
       }                                                                   \
       tropic01_reset();                                                   \
       tropic_deinit();                                                    \
-      tropic_init();                                                      \
+      tropic_init(NULL);                                                  \
       tropic_wait_for_ready(NULL);                                        \
       if (TROPIC_RETRY_COMMAND_session_started) {                         \
         if (tropic_custom_session_start(                                  \
@@ -116,7 +116,6 @@ typedef struct {
 #ifdef TREZOR_EMULATOR
   lt_dev_posix_tcp_t device;
 #endif
-  lt_ret_t init_ret;
 } tropic_driver_t;
 
 static tropic_driver_t g_tropic_driver = {0};
@@ -246,21 +245,18 @@ lt_ret_t tropic_session_invalidate(void) {
 lt_ret_t tropic_custom_session_start(cli_t *cli,
                                      lt_pkey_index_t pairing_key_index) {
   tropic_driver_t *drv = &g_tropic_driver;
-
-  if (!drv->initialized) {
-#ifdef TREZOR_PRODTEST
-    if (cli) {
-      cli_error(cli, CLI_ERROR, "Tropic driver is not initialized");
-    }
-#endif
+  lt_ret_t ret = LT_FAIL;
+  ret = tropic_init(cli);
+  if (ret != LT_OK) {
+    return ret;
+  }
+  if (!tropic_wait_for_ready(cli)) {
     return LT_FAIL;
   }
 
   if (drv->session_started && drv->pairing_key_index == pairing_key_index) {
     return LT_OK;
   }
-
-  lt_ret_t ret = LT_FAIL;
 
   curve25519_key trezor_private = {0};
   switch (pairing_key_index) {
@@ -312,8 +308,6 @@ lt_ret_t tropic_custom_session_start(cli_t *cli,
     }
   }
 
-  tropic_wait_for_ready(cli);
-
   ret = TROPIC_RETRY_COMMAND(lt_session_start(&drv->handle, tropic_public,
                                               pairing_key_index, trezor_private,
                                               trezor_public));
@@ -335,11 +329,17 @@ cleanup:
   return ret;
 }
 
-bool tropic_session_start(void) {
+// If `TREZOR_PRODTEST` is not defined, the `cli` argument is ignored.
+bool tropic_session_start(cli_t *cli) {
   tropic_driver_t *drv = &g_tropic_driver;
 
   if (!drv->initialized) {
-    return false;
+    if (tropic_init(cli) != LT_OK) {
+      return false;
+    }
+    if (!tropic_wait_for_ready(cli)) {
+      return false;
+    }
   }
 
   if (drv->session_started) {
@@ -442,11 +442,12 @@ static uint16_t get_tropic_model_port(void) {
 }
 #endif
 
-bool tropic_init(void) {
+// If `TREZOR_PRODTEST` is not defined, the `cli` argument is ignored.
+lt_ret_t tropic_init(cli_t *cli) {
   tropic_driver_t *drv = &g_tropic_driver;
 
   if (drv->initialized) {
-    return true;
+    return LT_OK;
   }
 
 #ifdef TREZOR_EMULATOR
@@ -460,13 +461,16 @@ bool tropic_init(void) {
 
   lt_ret_t ret = lt_init(&drv->handle);
   if (ret != LT_OK) {
-    drv->init_ret = ret;
-    return false;
+#ifdef TREZOR_PRODTEST
+    if (cli) {
+      cli_trace(cli, "`lt_init()` failed with error '%s'", lt_ret_verbose(ret));
+    }
+#endif
+    return ret;
   }
-  drv->init_ret = LT_OK;
   drv->initialized = true;
 
-  return true;
+  return LT_OK;
 }
 
 void tropic_deinit(void) {
@@ -485,21 +489,10 @@ lt_handle_t *tropic_get_handle(void) {
   return &drv->handle;
 }
 
-bool tropic_get_init_error(lt_ret_t *ret) {
-  tropic_driver_t *drv = &g_tropic_driver;
-
-  if (!drv->initialized && drv->init_ret != LT_OK) {
-    *ret = drv->init_ret;
-    return true;
-  }
-
-  return false;
-}
-
 bool tropic_ping(const uint8_t *msg_out, uint8_t *msg_in, uint16_t msg_len) {
   tropic_driver_t *drv = &g_tropic_driver;
 
-  if (!tropic_session_start()) {
+  if (!tropic_session_start(NULL)) {
     return false;
   }
 
@@ -510,7 +503,7 @@ bool tropic_ping(const uint8_t *msg_out, uint8_t *msg_in, uint16_t msg_len) {
 bool tropic_ecc_key_generate(uint16_t slot_index) {
   tropic_driver_t *drv = &g_tropic_driver;
 
-  if (!tropic_session_start()) {
+  if (!tropic_session_start(NULL)) {
     return false;
   }
 
@@ -527,7 +520,7 @@ bool tropic_ecc_sign(uint16_t key_slot_index, const uint8_t *dig,
                      uint16_t dig_len, uint8_t *sig) {
   tropic_driver_t *drv = &g_tropic_driver;
 
-  if (!tropic_session_start()) {
+  if (!tropic_session_start(NULL)) {
     return false;
   }
 
@@ -548,7 +541,7 @@ bool tropic_ecc_sign(uint16_t key_slot_index, const uint8_t *dig,
 bool tropic_data_read(uint16_t udata_slot, uint8_t *data, uint16_t *size) {
   tropic_driver_t *drv = &g_tropic_driver;
 
-  if (!tropic_session_start()) {
+  if (!tropic_session_start(NULL)) {
     return false;
   }
 
@@ -588,7 +581,7 @@ void tropic_get_factory_privkey(curve25519_key privkey) {
 bool tropic_random_buffer(void *buffer, size_t length) {
   tropic_driver_t *drv = &g_tropic_driver;
 
-  if (!tropic_session_start()) {
+  if (!tropic_session_start(NULL)) {
     return false;
   }
 
@@ -742,7 +735,7 @@ bool tropic_pin_stretch(tropic_ui_progress_t ui_progress, uint16_t pin_index,
 
   tropic_set_ui_progress(ui_progress);
 
-  if (!tropic_session_start()) {
+  if (!tropic_session_start(NULL)) {
     goto cleanup;
   }
 
@@ -795,7 +788,7 @@ bool tropic_pin_reset_slots(
 
   tropic_set_ui_progress(ui_progress);
 
-  if (!tropic_session_start()) {
+  if (!tropic_session_start(NULL)) {
     goto cleanup;
   }
 
@@ -860,7 +853,7 @@ bool tropic_pin_set(
 
   tropic_set_ui_progress(ui_progress);
 
-  if (!tropic_session_start()) {
+  if (!tropic_session_start(NULL)) {
     goto cleanup;
   }
 
@@ -932,7 +925,7 @@ bool tropic_pin_set_kek_masks(
 
   tropic_set_ui_progress(ui_progress);
 
-  if (!tropic_session_start()) {
+  if (!tropic_session_start(NULL)) {
     goto cleanup;
   }
 
@@ -979,7 +972,7 @@ bool tropic_pin_unmask_kek(
   tropic_set_ui_progress(ui_progress);
   bool ret = false;
 
-  if (!tropic_session_start()) {
+  if (!tropic_session_start(NULL)) {
     goto cleanup;
   }
 
