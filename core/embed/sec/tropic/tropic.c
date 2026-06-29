@@ -250,9 +250,6 @@ lt_ret_t tropic_custom_session_start(cli_t *cli,
   if (ret != LT_OK) {
     return ret;
   }
-  if (!tropic_wait_for_ready(cli)) {
-    return LT_FAIL;
-  }
 
   ret = LT_FAIL;
 
@@ -335,13 +332,8 @@ cleanup:
 bool tropic_session_start(cli_t *cli) {
   tropic_driver_t *drv = &g_tropic_driver;
 
-  if (!drv->initialized) {
-    if (tropic_init(cli) != LT_OK) {
-      return false;
-    }
-    if (!tropic_wait_for_ready(cli)) {
-      return false;
-    }
+  if (tropic_init(cli) != LT_OK) {
+    return false;
   }
 
   if (drv->session_started) {

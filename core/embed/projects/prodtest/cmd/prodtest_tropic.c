@@ -50,9 +50,6 @@ static lt_ret_t tropic_prodtest_get_handle(cli_t* cli, lt_handle_t** handle) {
   if (ret != LT_OK) {
     return ret;
   }
-  if (!tropic_wait_for_ready(cli)) {
-    return LT_FAIL;
-  }
 
   *handle = tropic_get_handle();
   if (*handle != NULL) {
@@ -588,10 +585,6 @@ static void prodtest_tropic_certtropic_read(cli_t* cli) {
               lt_ret_verbose(init_ret));
     return;
   }
-  if (!tropic_wait_for_ready(cli)) {
-    cli_error(cli, CLI_ERROR, "Tropic setup failed");
-    return;
-  }
 
   const uint8_t* tropic_cert_chain = NULL;
   size_t tropic_cert_chain_length = 0;
@@ -950,11 +943,6 @@ static void prodtest_tropic_get_access_credential(cli_t* cli) {
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
               lt_ret_verbose(ret));
-    goto cleanup;
-  }
-  if (!tropic_wait_for_ready(cli)) {
-    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
-              lt_ret_verbose(LT_FAIL));
     goto cleanup;
   }
 
@@ -1821,11 +1809,6 @@ static void prodtest_tropic_stress_test(cli_t* cli) {
       cli_error(cli, CLI_ERROR,
                 "Call #%d of `tropic_init()` failed with error '%s'", i + 1,
                 lt_ret_verbose(res));
-      return;
-    }
-    if (!tropic_wait_for_ready(cli)) {
-      cli_error(cli, CLI_ERROR, "Call #%d of `tropic_wait_for_ready()` failed",
-                i + 1);
       return;
     }
   }
