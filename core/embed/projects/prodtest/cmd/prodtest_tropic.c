@@ -579,13 +579,6 @@ static void prodtest_tropic_certtropic_read(cli_t* cli) {
     return;
   }
 
-  lt_ret_t init_ret = tropic_init(cli);
-  if (init_ret != LT_OK) {
-    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
-              lt_ret_verbose(init_ret));
-    return;
-  }
-
   const uint8_t* tropic_cert_chain = NULL;
   size_t tropic_cert_chain_length = 0;
   if (!tropic_get_cert_chain_ptr(cli, &tropic_cert_chain,
@@ -936,13 +929,6 @@ static void prodtest_tropic_get_access_credential(cli_t* cli) {
   if (secret_key_tropic_pairing_unprivileged(unprivileged_private) != sectrue) {
     cli_error(cli, CLI_ERROR,
               "`secret_key_tropic_pairing_unprivileged()` failed.");
-    goto cleanup;
-  }
-
-  lt_ret_t ret = tropic_init(cli);
-  if (ret != LT_OK) {
-    cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
-              lt_ret_verbose(ret));
     goto cleanup;
   }
 

@@ -132,6 +132,10 @@ static bool cache_tropic_cert_chain(cli_t *cli) {
     return true;
   }
 
+  if (tropic_init(cli) != LT_OK) {
+    return false;
+  }
+
   struct lt_cert_store_t cert_store = {0};
   for (size_t i = 0; i < LT_NUM_CERTIFICATES; i++) {
     cert_store.certs[i] =
