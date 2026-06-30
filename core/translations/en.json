@@ -1839,7 +1839,7 @@
     "recovery__dry_run_bip39_valid_mismatch": "The entered wallet backup is valid but doesn't match the one on this device.",
     "recovery__dry_run_slip39_valid_match": "The entered wallet backup is valid and matches the one on this device.",
     "recovery__dry_run_slip39_valid_mismatch": "The entered wallet backup is valid but doesn't match the one on this device.",
-    "recovery__enter_any_share": "Enter any share",
+    "recovery__enter_any_share": "Enter any share.",
     "recovery__enter_backup": "Enter your backup.",
     "recovery__enter_different_share": {
       "Bolt": "Enter a different share.",
