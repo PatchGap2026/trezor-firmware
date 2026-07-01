@@ -212,8 +212,7 @@ lt_ret_t tropic_session_invalidate(void) {
 lt_ret_t tropic_custom_session_start(cli_t *cli,
                                      lt_pkey_index_t pairing_key_index) {
   tropic_driver_t *drv = &g_tropic_driver;
-  lt_ret_t ret = LT_FAIL;
-  ret = tropic_init(cli);
+  lt_ret_t ret = tropic_init(cli);
   if (ret != LT_OK) {
     return ret;
   }
