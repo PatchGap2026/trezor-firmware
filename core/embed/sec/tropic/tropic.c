@@ -107,7 +107,6 @@ static bool is_retryable(lt_ret_t ret) {
 typedef struct {
   bool initialized;
   bool session_started;
-  bool chip_ready;
   lt_pkey_index_t pairing_key_index;  // This field is valid only if
                                       // session_started is true.
   lt_handle_t handle;
