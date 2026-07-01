@@ -77,8 +77,6 @@ lt_ret_t tropic_custom_session_start(cli_t* cli,
 
 lt_ret_t tropic_session_invalidate(void);
 
-bool tropic_wait_for_ready(cli_t* cli);
-
 bool tropic_get_pubkey(cli_t* cli, curve25519_key pubkey);
 
 bool tropic_get_cert_chain_ptr(cli_t* cli, uint8_t const** cert_chain,

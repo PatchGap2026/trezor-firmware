@@ -92,7 +92,6 @@ static bool is_retryable(lt_ret_t ret) {
       tropic01_reset();                                                   \
       tropic_deinit();                                                    \
       tropic_init(NULL);                                                  \
-      tropic_wait_for_ready(NULL);                                        \
       if (TROPIC_RETRY_COMMAND_session_started) {                         \
         if (tropic_custom_session_start(                                  \
                 NULL, TROPIC_RETRY_COMMAND_pairing_key_index) != LT_OK) { \
@@ -200,41 +199,6 @@ bool tropic_get_cert_chain_ptr(cli_t *cli, uint8_t const **cert_chain,
 }
 
 #endif  // !PRODUCTION || defined(TREZOR_PRODTEST)
-
-// If `TREZOR_PRODTEST` is not defined, the `cli` argument is ignored.
-bool tropic_wait_for_ready(cli_t *cli) {
-  tropic_driver_t *drv = &g_tropic_driver;
-
-  if (!drv->initialized) {
-#if TREZOR_PRODTEST
-    if (cli) {
-      cli_trace(cli, "Tropic driver is not initialized");
-    }
-#endif
-    return false;
-  }
-
-  if (drv->chip_ready) {
-    return true;
-  }
-
-  // Wait for Tropic to boot before issuing any session commands.
-  uint32_t boot_start_ms = hal_ticks_ms();
-  while (hal_ticks_ms() - boot_start_ms < TROPIC_BOOT_TIMEOUT_MS) {
-    uint8_t ver[TR01_L2_GET_INFO_RISCV_FW_SIZE] = {0};
-    if (lt_get_info_riscv_fw_ver(&drv->handle, ver) != LT_L1_CHIP_BUSY) {
-      drv->chip_ready = true;
-      return true;
-    }
-  }
-
-#if TREZOR_PRODTEST
-  if (cli) {
-    cli_trace(cli, "Tropic is busy");
-  }
-#endif
-  return false;
-}
 
 lt_ret_t tropic_session_invalidate(void) {
   lt_ret_t ret = lt_session_abort(&g_tropic_driver.handle);
