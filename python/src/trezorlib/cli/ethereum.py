@@ -178,6 +178,7 @@ def _hex_or_file(data: str) -> bytes:
 class CliSource(definitions.Source):
     network: Optional[bytes] = None
     token: Optional[bytes] = None
+    display_format: Optional[bytes] = None
     delegate: definitions.Source = definitions.NullSource()
 
     def get_eth_network(self, chain_id: int) -> Optional[bytes]:
@@ -194,6 +195,13 @@ class CliSource(definitions.Source):
         if self.token is not None:
             return self.token
         return self.delegate.get_eth_token(chain_id, address)
+
+    def get_eth_display_format(
+        self, chain_id: int, address: Any, func_sig: bytes
+    ) -> Optional[bytes]:
+        if self.display_format is not None:
+            return self.display_format
+        return self.delegate.get_eth_display_format(chain_id, address, func_sig)
 
 
 DEFINITIONS_SOURCE = CliSource()
@@ -213,6 +221,42 @@ def _network_def_from_address_n(address_n: tools.Address) -> Optional[bytes]:
     return DEFINITIONS_SOURCE.get_eth_network_by_slip44(slip44)
 
 
+def _definition_provider(
+    req: "ethereum.messages.EthereumDefinitionRequest",
+) -> "ethereum.messages.EthereumDefinitionAck":
+    """Answer a firmware `EthereumDefinitionRequest` from `DEFINITIONS_SOURCE`.
+
+    The firmware issues these mid-flow while signing a transaction:
+
+    - With a `func_sig`, it is asking for an ERC-7730 contract descriptor
+      (clear-signing display format) for `token_address` on `chain_id`.
+    - Without a `func_sig`, it is asking for a network + token definition
+      (e.g. to resolve a token referenced by a descriptor field).
+    """
+    if req.func_sig:
+        encoded_display_format = DEFINITIONS_SOURCE.get_eth_display_format(
+            req.chain_id, req.token_address, req.func_sig
+        )
+        if encoded_display_format is None:
+            return ethereum.messages.EthereumDefinitionAck(definitions=None)
+        return ethereum.messages.EthereumDefinitionAck(
+            definitions=EthereumDefinitions(
+                encoded_display_format=encoded_display_format,
+            )
+        )
+
+    encoded_network = DEFINITIONS_SOURCE.get_eth_network(req.chain_id)
+    encoded_token = DEFINITIONS_SOURCE.get_eth_token(req.chain_id, req.token_address)
+    if encoded_network is None and encoded_token is None:
+        return ethereum.messages.EthereumDefinitionAck(definitions=None)
+    return ethereum.messages.EthereumDefinitionAck(
+        definitions=EthereumDefinitions(
+            encoded_network=encoded_network,
+            encoded_token=encoded_token,
+        )
+    )
+
+
 #####################
 #
 # commands start here
@@ -220,7 +264,7 @@ def _network_def_from_address_n(address_n: tools.Address) -> Optional[bytes]:
 
 @click.group(name="ethereum")
 @click.option(
-    "-d", "--definitions", "defs", help="Source for Ethereum definition blobs."
+    "-s", "--definitions", "defs", help="Source for Ethereum definition blobs."
 )
 @click.option(
     "-a",
@@ -230,11 +274,15 @@ def _network_def_from_address_n(address_n: tools.Address) -> Optional[bytes]:
 )
 @click.option("--network", help="Network definition blob.")
 @click.option("--token", help="Token definition blob.")
+@click.option(
+    "--display-format", help="ERC-7730 clear-signing contract descriptor blob."
+)
 def cli(
     defs: Optional[str],
     auto_definitions: Optional[bool],
     network: Optional[str],
     token: Optional[str],
+    display_format: Optional[str],
 ) -> None:
     """Ethereum commands.
 
@@ -251,9 +299,10 @@ def cli(
     - path to local tar archive
     \b
 
-    For debugging purposes, it is possible to force use a specific network and token
-    definition by using the `--network` and `--token` options. These options accept
-    either a path to a file with a binary blob, or a hex-encoded string.
+    For debugging purposes, it is possible to force use a specific network, token
+    or contract descriptor definition by using the `--network`, `--token` and
+    `--display-format` options. These options accept either a path to a file with a
+    binary blob, or a hex-encoded string.
     """
     if auto_definitions:
         if defs is not None:
@@ -276,6 +325,8 @@ def cli(
         DEFINITIONS_SOURCE.network = _hex_or_file(network)
     if token is not None:
         DEFINITIONS_SOURCE.token = _hex_or_file(token)
+    if display_format is not None:
+        DEFINITIONS_SOURCE.display_format = _hex_or_file(display_format)
 
 
 @cli.command()
@@ -473,6 +524,8 @@ def sign_tx(
             access_list=access_list,
             definitions=defs,
             chunkify=chunkify,
+            supports_definition_request=True,
+            definition_provider=_definition_provider,
         )
     else:
         if gas_price is None:
@@ -491,6 +544,8 @@ def sign_tx(
             chain_id=chain_id,
             definitions=defs,
             chunkify=chunkify,
+            supports_definition_request=True,
+            definition_provider=_definition_provider,
         )
 
     to = ethereum.decode_hex(to_address)
