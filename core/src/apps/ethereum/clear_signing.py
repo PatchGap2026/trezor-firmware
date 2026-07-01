@@ -37,7 +37,9 @@ if TYPE_CHECKING:
     ListValue = list[TupleValue]
     AnyValue = Value | TupleValue | list["AnyValue"]
 
-    Path = tuple[int | tuple[int] | tuple[int, int], ...] | int
+    # A data path (tuple of steps), a container path (int enum), or a literal
+    # constant value (str, resolved by the parser — not walked from calldata).
+    Path = tuple[int | tuple[int] | tuple[int, int], ...] | int | str
     PathWalker = Callable[[Path], AnyValue]
 
     # Parses a Value from a slice of the calldata.
@@ -729,6 +731,10 @@ class FieldDefinition:
         def decode_path(p: EthereumERC7730Path) -> Path:
             if p.container_path is not None:
                 return p.container_path
+            if p.const_value is not None:
+                # A literal constant value, resolved by the parser — not walked
+                # from calldata. Rendered as-is (typically by the raw formatter).
+                return p.const_value
             return tuple(p.path)
 
         path = decode_path(info.path)
@@ -835,6 +841,9 @@ class DisplayFormat:
             offset += consumed
 
         def get_value_for_path(path: Path) -> AnyValue:
+            if isinstance(path, str):
+                # a literal constant value, not walked from calldata
+                return path
             if isinstance(path, int):  # ContainerPath
                 # standard container paths like @.from, @.value...
                 if path == ContainerPath.From:

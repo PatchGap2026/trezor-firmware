@@ -617,6 +617,45 @@ class TestEthereumClearSigning(unittest.TestCase):
         self.assertIsNone(token)
         self.assertIsNone(token_address)
 
+    # --- constant (non-calldata) value fields ---
+
+    def test_from_proto_const_value_path(self):
+        # A `const_value` path decodes to the literal string — a value source
+        # that is not walked from calldata.
+        info = EthereumERC7730FieldInfo(
+            path=EthereumERC7730Path(const_value="kmgcEURC"),
+            label="Share ticker",
+            formatter=FT.FORMATTER_RAW,
+        )
+        field = FieldDefinition.from_proto(info)
+        self.assertEqual(field.path, "kmgcEURC")
+        self.assertIsInstance(field.get_formatter(), RawFormatter)
+
+    def test_const_value_end_to_end(self):
+        # A field bound to a constant renders the literal as-is, without touching
+        # calldata (empty params, empty calldata).
+        display_format = DisplayFormat(
+            binding_context=None,
+            func_sig=b"\x00\x00\x00\x00",
+            intent="Test",
+            parameter_definitions=[],
+            field_definitions=[
+                FieldDefinition("kmgcEURC", "Share ticker", RawFormatter)
+            ],
+        )
+
+        parameters, fields = await_result(
+            display_format.parse_calldata(memoryview(b""), None, None)
+        )
+
+        self.assertEqual(parameters, [])
+        self.assertEqual(len(fields), 1)
+        (label, formatted, hint), token, token_address = fields[0]
+        self.assertEqual(label, "Share ticker")
+        self.assertEqual(formatted, "kmgcEURC")
+        self.assertIsNone(token)
+        self.assertIsNone(token_address)
+
     # --- tokenAmount with a constant (literal) token address ---
 
     def test_from_proto_token_amount_constant_token(self):
