@@ -141,9 +141,7 @@ static bool cache_tropic_cert_chain(cli_t *cli) {
     cert_store.buf_len[i] = TR01_L2_GET_INFO_REQ_CERT_SIZE_SINGLE;
   }
 
-  lt_ret_t ret = LT_FAIL;
-
-  ret = lt_get_info_cert_store(&g_tropic_driver.handle, &cert_store);
+  lt_ret_t ret = lt_get_info_cert_store(&g_tropic_driver.handle, &cert_store);
   if (ret != LT_OK) {
 #if TREZOR_PRODTEST
     if (cli) {
@@ -651,11 +649,10 @@ static void get_change_pin_counter_time(uint32_t *time_ms,
 
 static bool update_change_pin_counter() {
   tropic_driver_t *drv = &g_tropic_driver;
-  lt_ret_t ret = LT_FAIL;
 
   // The cache is invalidated because the counter may be updated more than once
   g_is_change_pin_counter_cached = false;
-  ret = TROPIC_RETRY_COMMAND(
+  lt_ret_t ret = TROPIC_RETRY_COMMAND(
       lt_mcounter_update(&drv->handle, TROPIC_CHANGE_COUNTER_SLOT));
   if (ret == LT_L3_COUNTER_INVALID) {
     // The counter has not been initialized yet
