@@ -219,6 +219,8 @@ lt_ret_t tropic_custom_session_start(cli_t *cli,
     return LT_OK;
   }
 
+  ret = LT_FAIL;
+
   curve25519_key trezor_private = {0};
   switch (pairing_key_index) {
     case TROPIC_FACTORY_PAIRING_KEY_SLOT:
