@@ -1869,7 +1869,7 @@
     "recovery__share_already_entered": {
       "Bolt": "Share already entered",
       "Caesar": "Share already entered",
-      "Delizia": "Share already entered",
+      "Delizia": "Share already entered.",
       "Eckhart": "Share already entered. Enter a different share."
     },
     "recovery__share_does_not_match": {
