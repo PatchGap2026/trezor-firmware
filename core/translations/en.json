@@ -892,12 +892,7 @@
     "fido__device_already_registered": "This device is already registered with this application.",
     "fido__device_already_registered_with_template": "This device is already registered with {0}.",
     "fido__device_not_registered": "This device is not registered with this application.",
-    "fido__does_not_belong": {
-      "Bolt": "The credential you are trying to import does\nnot belong to this authenticator.",
-      "Caesar": "The credential you are trying to import does\nnot belong to this authenticator.",
-      "Delizia": "The credential you are trying to import does\nnot belong to this authenticator.",
-      "Eckhart": "The credential you are trying to import does not belong to this authenticator."
-    },
+    "fido__does_not_belong": "The credential you are trying to import does not belong to this authenticator.",
     "fido__erase_credentials": {
       "Bolt": "erase all credentials?",
       "Caesar": "",
@@ -1906,12 +1901,7 @@
     "recovery__wanna_cancel_dry_run": "Are you sure you want to cancel the backup check?",
     "recovery__wanna_cancel_recovery": "Are you sure you want to cancel the recovery process?",
     "recovery__word_count_template": "({0} words)",
-    "recovery__word_x_of_y_template": {
-      "Bolt": "Word {0} of {1}",
-      "Caesar": "Word {0} of {1}",
-      "Delizia": "Word {0} of {1}",
-      "Eckhart": "Word {0}\nof {1}"
-    },
+    "recovery__word_x_of_y_template": "Word {0} of {1}",
     "recovery__x_more_items_starting_template_plural": {
       "Bolt": "{count} more {plural} starting",
       "Caesar": "",
@@ -2188,7 +2178,7 @@
       "Bolt": "",
       "Caesar": "",
       "Delizia": "",
-      "Eckhart": "Select word {0} from\nshare {1}"
+      "Eckhart": "Select word {0} from share {1}"
     },
     "reset__select_word_template": {
       "Bolt": "",
