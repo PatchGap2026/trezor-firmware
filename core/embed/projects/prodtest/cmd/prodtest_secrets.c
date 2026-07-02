@@ -135,7 +135,8 @@ static void prodtest_secrets_init(cli_t* cli) {
   lt_ret_t ret =
       tropic_custom_session_start(cli, TROPIC_FACTORY_PAIRING_KEY_SLOT);
   if (ret != LT_OK) {
-    cli_error(cli, CLI_ERROR, "Tropic session setup failed with error '%s'",
+    cli_error(cli, CLI_ERROR,
+              "`tropic_custom_session_start()` failed with error '%s'",
               lt_ret_verbose(ret));
     return;
   }
