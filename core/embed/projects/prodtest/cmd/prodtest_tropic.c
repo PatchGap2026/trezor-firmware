@@ -85,7 +85,7 @@ static tropic_handshake_state_t g_tropic_handshake_state =
 // TODO: Adjust the configuration to match the revision of the provisioned
 // tropics.
 // clang-format off
-static const struct lt_config_t g_irreversible_configuration = {
+static const lt_config_t g_irreversible_configuration = {
     .obj = {
         // # CFG_START_UP (0x00)
         // | Setting                 | Value                   |
@@ -294,7 +294,7 @@ static const struct lt_config_t g_irreversible_configuration = {
 
 // TODO: Adjust the configuration to match the revision of the provisioned
 // tropics.
-static const struct lt_config_t g_reversible_configuration = {
+static const lt_config_t g_reversible_configuration = {
     .obj = {
         // # CFG_START_UP (0x00)
         // | Setting                 | Value                     |
@@ -549,7 +549,7 @@ static void prodtest_tropic_get_chip_id(cli_t* cli) {
   }
 
   TROPIC_PRODTEST_GET_HANDLE_OR_RETURN(cli, tropic_handle);
-  struct lt_chip_id_t chip_id;
+  lt_chip_id_t chip_id;
   lt_ret_t ret = lt_get_info_chip_id(tropic_handle, &chip_id);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR, "lt_get_info_chip_id() failed with error '%s'",
@@ -637,7 +637,7 @@ tropic_locked_status get_tropic_locked_status(cli_t* cli) {
     }
   }
 
-  struct lt_config_t configuration_read = {0};
+  lt_config_t configuration_read = {0};
 
   ret = lt_read_whole_R_config(tropic_handle, &configuration_read);
   if (ret != LT_OK) {
@@ -1209,7 +1209,7 @@ static void prodtest_tropic_lock(cli_t* cli) {
 
   g_tropic_handshake_state = TROPIC_HANDSHAKE_STATE_0;
 
-  struct lt_config_t configuration_read = {0};
+  lt_config_t configuration_read = {0};
 
   TROPIC_PRODTEST_GET_HANDLE_OR_RETURN(cli, tropic_handle);
 
@@ -1983,7 +1983,7 @@ static void prodtest_tropic_set_sensors(cli_t* cli) {
     return;
   }
 
-  struct lt_config_t configuration = {0};
+  lt_config_t configuration = {0};
   ret = lt_read_whole_R_config_retry(tropic_handle, &configuration);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR, "`lt_read_whole_R_config()` failed with error %s",
@@ -2003,7 +2003,7 @@ static void prodtest_tropic_set_sensors(cli_t* cli) {
   }
 
   // Verify the write
-  struct lt_config_t verify_configuration = {0};
+  lt_config_t verify_configuration = {0};
   ret = lt_read_whole_R_config_retry(tropic_handle, &verify_configuration);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR,
@@ -2061,7 +2061,7 @@ static void prodtest_tropic_read_configs(cli_t* cli) {
   }
 
   // read reversible configuration
-  struct lt_config_t r_config = {0};
+  lt_config_t r_config = {0};
   lt_ret_t ret = lt_read_whole_R_config_retry(tropic_handle, &r_config);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR, "`lt_read_whole_R_config()` failed with error %s",
@@ -2076,7 +2076,7 @@ static void prodtest_tropic_read_configs(cli_t* cli) {
   }
 
   // read irreversible configuration
-  struct lt_config_t i_config = {0};
+  lt_config_t i_config = {0};
   ret = lt_read_whole_I_config(tropic_handle, &i_config);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR, "`lt_read_whole_I_config()` failed with error %s",

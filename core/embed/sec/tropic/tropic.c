@@ -134,7 +134,7 @@ static bool cache_tropic_cert_chain(cli_t *cli) {
     return false;
   }
 
-  struct lt_cert_store_t cert_store = {0};
+  lt_cert_store_t cert_store = {0};
   for (size_t i = 0; i < LT_NUM_CERTIFICATES; i++) {
     cert_store.certs[i] =
         &tropic_cert_chain[i * TR01_L2_GET_INFO_REQ_CERT_SIZE_SINGLE];
@@ -347,12 +347,12 @@ lt_ret_t lt_mac_and_destroy_retry(lt_handle_t *tropic_handle,
 }
 
 lt_ret_t lt_read_whole_R_config_retry(lt_handle_t *tropic_handle,
-                                      struct lt_config_t *config) {
+                                      lt_config_t *config) {
   return TROPIC_RETRY_COMMAND(lt_read_whole_R_config(tropic_handle, config));
 }
 
 static lt_ret_t lt_erase_and_write_R_config(lt_handle_t *tropic_handle,
-                                            const struct lt_config_t *config) {
+                                            const lt_config_t *config) {
   lt_ret_t ret = lt_r_config_erase(tropic_handle);
   if (ret != LT_OK) {
     return ret;
@@ -378,7 +378,7 @@ static lt_ret_t lt_erase_and_write_R_config(lt_handle_t *tropic_handle,
 }
 
 lt_ret_t lt_erase_and_write_R_config_retry(lt_handle_t *tropic_handle,
-                                           const struct lt_config_t *config) {
+                                           const lt_config_t *config) {
   return TROPIC_RETRY_COMMAND(
       lt_erase_and_write_R_config(tropic_handle, config));
 }

@@ -93,10 +93,10 @@ lt_ret_t lt_mac_and_destroy_retry(lt_handle_t* tropic_handle,
                                   const uint8_t* data_out, uint8_t* data_in);
 
 lt_ret_t lt_read_whole_R_config_retry(lt_handle_t* tropic_handle,
-                                      struct lt_config_t* config);
+                                      lt_config_t* config);
 
 lt_ret_t lt_erase_and_write_R_config_retry(lt_handle_t* tropic_handle,
-                                           const struct lt_config_t* config);
+                                           const lt_config_t* config);
 
 #endif
 
