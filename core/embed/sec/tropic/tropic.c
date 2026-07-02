@@ -67,7 +67,7 @@
 #else
 #define TROPIC_MAX_RETRIES 10
 
-bool tropic_session_start(cli_t *cli);
+bool tropic_session_start(void);
 
 static bool is_retryable(lt_ret_t ret) {
   return ret == LT_L1_CHIP_ALARM_MODE || ret == LT_L1_SPI_ERROR ||
@@ -294,11 +294,10 @@ cleanup:
   return ret;
 }
 
-// If `TREZOR_PRODTEST` is not defined, the `cli` argument is ignored.
-bool tropic_session_start(cli_t *cli) {
+bool tropic_session_start(void) {
   tropic_driver_t *drv = &g_tropic_driver;
 
-  if (tropic_init(cli) != LT_OK) {
+  if (tropic_init(NULL) != LT_OK) {
     return false;
   }
 
@@ -452,7 +451,7 @@ lt_handle_t *tropic_get_handle(void) {
 bool tropic_ping(const uint8_t *msg_out, uint8_t *msg_in, uint16_t msg_len) {
   tropic_driver_t *drv = &g_tropic_driver;
 
-  if (!tropic_session_start(NULL)) {
+  if (!tropic_session_start()) {
     return false;
   }
 
@@ -463,7 +462,7 @@ bool tropic_ping(const uint8_t *msg_out, uint8_t *msg_in, uint16_t msg_len) {
 bool tropic_ecc_key_generate(uint16_t slot_index) {
   tropic_driver_t *drv = &g_tropic_driver;
 
-  if (!tropic_session_start(NULL)) {
+  if (!tropic_session_start()) {
     return false;
   }
 
@@ -480,7 +479,7 @@ bool tropic_ecc_sign(uint16_t key_slot_index, const uint8_t *dig,
                      uint16_t dig_len, uint8_t *sig) {
   tropic_driver_t *drv = &g_tropic_driver;
 
-  if (!tropic_session_start(NULL)) {
+  if (!tropic_session_start()) {
     return false;
   }
 
@@ -501,7 +500,7 @@ bool tropic_ecc_sign(uint16_t key_slot_index, const uint8_t *dig,
 bool tropic_data_read(uint16_t udata_slot, uint8_t *data, uint16_t *size) {
   tropic_driver_t *drv = &g_tropic_driver;
 
-  if (!tropic_session_start(NULL)) {
+  if (!tropic_session_start()) {
     return false;
   }
 
@@ -541,7 +540,7 @@ void tropic_get_factory_privkey(curve25519_key privkey) {
 bool tropic_random_buffer(void *buffer, size_t length) {
   tropic_driver_t *drv = &g_tropic_driver;
 
-  if (!tropic_session_start(NULL)) {
+  if (!tropic_session_start()) {
     return false;
   }
 
@@ -695,7 +694,7 @@ bool tropic_pin_stretch(tropic_ui_progress_t ui_progress, uint16_t pin_index,
 
   tropic_set_ui_progress(ui_progress);
 
-  if (!tropic_session_start(NULL)) {
+  if (!tropic_session_start()) {
     goto cleanup;
   }
 
@@ -748,7 +747,7 @@ bool tropic_pin_reset_slots(
 
   tropic_set_ui_progress(ui_progress);
 
-  if (!tropic_session_start(NULL)) {
+  if (!tropic_session_start()) {
     goto cleanup;
   }
 
@@ -813,7 +812,7 @@ bool tropic_pin_set(
 
   tropic_set_ui_progress(ui_progress);
 
-  if (!tropic_session_start(NULL)) {
+  if (!tropic_session_start()) {
     goto cleanup;
   }
 
@@ -885,7 +884,7 @@ bool tropic_pin_set_kek_masks(
 
   tropic_set_ui_progress(ui_progress);
 
-  if (!tropic_session_start(NULL)) {
+  if (!tropic_session_start()) {
     goto cleanup;
   }
 
@@ -932,7 +931,7 @@ bool tropic_pin_unmask_kek(
   tropic_set_ui_progress(ui_progress);
   bool ret = false;
 
-  if (!tropic_session_start(NULL)) {
+  if (!tropic_session_start()) {
     goto cleanup;
   }
 
