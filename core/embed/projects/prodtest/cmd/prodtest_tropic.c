@@ -1507,12 +1507,9 @@ static void cert_read(cli_t* cli, uint16_t first_slot, uint16_t slots_count) {
   }
 
   g_tropic_handshake_state = TROPIC_HANDSHAKE_STATE_0;
-  lt_ret_t ret = LT_FAIL;
 
-  uint8_t certificate[TROPIC_SLOT_MAX_SIZE_V1 * slots_count];
-  size_t certificate_length = 0;
   lt_handle_t* tropic_handle = NULL;
-  ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  lt_ret_t ret = tropic_prodtest_get_handle(cli, &tropic_handle);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
               lt_ret_verbose(ret));
@@ -1527,6 +1524,8 @@ static void cert_read(cli_t* cli, uint16_t first_slot, uint16_t slots_count) {
     return;
   }
 
+  uint8_t certificate[TROPIC_SLOT_MAX_SIZE_V1 * slots_count];
+  size_t certificate_length = 0;
   ret = data_read(tropic_handle, first_slot, slots_count, certificate,
                   sizeof(certificate), &certificate_length);
   if (ret != LT_OK) {
@@ -1561,13 +1560,8 @@ static void pubkey_read(cli_t* cli, lt_ecc_slot_t slot,
     return;
   }
 
-  lt_ret_t ret = LT_FAIL;
-
-  uint8_t public_key[ECDSA_PUBLIC_KEY_SIZE] = {0x04};
-  lt_ecc_curve_type_t curve_type = 0;
-  lt_ecc_key_origin_t origin = 0;
   lt_handle_t* tropic_handle = NULL;
-  ret = tropic_prodtest_get_handle(cli, &tropic_handle);
+  lt_ret_t ret = tropic_prodtest_get_handle(cli, &tropic_handle);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR, "Tropic setup failed with error '%s'",
               lt_ret_verbose(ret));
@@ -1582,6 +1576,9 @@ static void pubkey_read(cli_t* cli, lt_ecc_slot_t slot,
     return;
   }
 
+  uint8_t public_key[ECDSA_PUBLIC_KEY_SIZE] = {0x04};
+  lt_ecc_curve_type_t curve_type = 0;
+  lt_ecc_key_origin_t origin = 0;
   ret = lt_ecc_key_read(tropic_handle, slot, &public_key[1],
                         ECDSA_PUBLIC_KEY_SIZE - 1, &curve_type, &origin);
   if (ret != LT_OK) {
