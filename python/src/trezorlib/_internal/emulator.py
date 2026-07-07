@@ -62,10 +62,14 @@ class TropicModel:
         configfile: Path,
         port: int = DEFAULT_PORT,
         logfile: TextIO | str | Path | None = None,
+        configfile_output: Path | None = None,
     ) -> None:
         self.profile_dir = Path(profile_dir).resolve()
         self.port = port
         self.configfile = configfile.resolve()
+        self.configfile_output = (
+            configfile_output or self.profile_dir / "tropic_model_config_output.yml"
+        )
         self.logfile = logfile or self.profile_dir / "trezor-tropic-model.log"
         self.process: Optional[subprocess.Popen] = None
 
@@ -113,7 +117,7 @@ class TropicModel:
                 "-p",
                 str(self.port),
                 "-o",
-                str(self.profile_dir / "tropic_model_config_output.yml"),
+                str(self.configfile_output),
             ],
             cwd=self.profile_dir,
             stdout=cast(TextIO, output),

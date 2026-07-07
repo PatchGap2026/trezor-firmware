@@ -9,12 +9,24 @@ from trezorlib._internal.emulator import TropicModel
 
 from ..emulators import (
     TROPIC_MODEL_CONFIGFILE,
+    TROPIC_MODEL_CONFIGFILE_OLD,
+    TROPIC_OLD_CONFIG_UNTIL_VERSION,
     delete_profile,
     get_logfile,
     is_tropic_capable_model,
 )
 
 LOG = logging.getLogger(__name__)
+
+
+def _get_tropic_model_configfile(tag: str | None) -> Path:
+    if tag is not None and tag.startswith("v"):
+        tag_version = tag[1:].partition("-")[0]
+        if len(tag_version.split(".")) == 3:
+            version_tuple = tuple(int(i) for i in tag_version.split("."))
+            if version_tuple <= TROPIC_OLD_CONFIG_UNTIL_VERSION:
+                return TROPIC_MODEL_CONFIGFILE_OLD
+    return TROPIC_MODEL_CONFIGFILE
 
 
 # This fixture is very similar to `tropic_model` from the parent directory, but has a "function"
@@ -27,6 +39,7 @@ def shared_profile_dir(request) -> Generator[str, Any, Any]:
     # This means upgrade tests currently can't run in multiple threads for T3W1.
     tropic_model_port = 28992
     model = request.node.callspec.params["model"]
+    tag = request.node.callspec.params["tag"]
     start_tropic_model = is_tropic_capable_model(model)
 
     profile_dir = tempfile.TemporaryDirectory(
@@ -44,7 +57,7 @@ def shared_profile_dir(request) -> Generator[str, Any, Any]:
 
         with TropicModel(
             profile_dir=path,
-            configfile=TROPIC_MODEL_CONFIGFILE,
+            configfile=_get_tropic_model_configfile(tag),
             port=tropic_model_port,
             logfile=get_logfile("trezor-tropic-model.log", Path(profile_dir.name)),
         ) as tropic_model:
