@@ -722,7 +722,7 @@ static bool tropic_is_paired(cli_t* cli) {
   if (ret != LT_OK) {
     cli_trace(
         cli,
-        "`tropic_custom_session_start()` failed for unprivileged key with "
+        "`tropic_custom_session_start()` for unprivileged key failed with "
         "error '%s'",
         lt_ret_verbose(ret));
     goto cleanup;
@@ -732,8 +732,8 @@ static bool tropic_is_paired(cli_t* cli) {
   ret = tropic_custom_session_start(cli, TROPIC_PRIVILEGED_PAIRING_KEY_SLOT);
   if (ret != LT_OK) {
     cli_trace(cli,
-              "`tropic_custom_session_start()` failed for privileged key with "
-              "error '%s'",
+              "`tropic_custom_session_start()` for privileged key failed "
+              "with error '%s'",
               lt_ret_verbose(ret));
     goto cleanup;
   }
@@ -1191,11 +1191,11 @@ static void prodtest_tropic_send_command(cli_t* cli) {
 
 static void prodtest_tropic_lock(cli_t* cli) {
   // This function is:
-  //   * idempotent (it can be called multiple times without changing the
-  //   state of the device),
+  //   * idempotent (it can be called multiple times without changing the state
+  //   of the device),
   //   * irreversible (it cannot be undone),
-  //   * self-recovering (if the device is powered off during execution, it
-  //   can be called again to continue from where it left off).
+  //   * self-recovering (if the device is powered off during execution, it can
+  //   be called again to continue from where it left off).
 
   if (cli_arg_count(cli) > 0) {
     cli_error_arg_count(cli);
@@ -1208,8 +1208,6 @@ static void prodtest_tropic_lock(cli_t* cli) {
   }
 
   g_tropic_handshake_state = TROPIC_HANDSHAKE_STATE_0;
-
-  lt_config_t configuration_read = {0};
 
   TROPIC_PRODTEST_GET_HANDLE_OR_RETURN(cli, tropic_handle);
 
@@ -1238,6 +1236,7 @@ static void prodtest_tropic_lock(cli_t* cli) {
     return;
   }
 
+  lt_config_t configuration_read = {0};
   ret = lt_read_whole_R_config(tropic_handle, &configuration_read);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR,
@@ -1428,7 +1427,7 @@ static void cert_write(cli_t* cli, uint16_t first_slot, uint16_t slots_count) {
       tropic_custom_session_start(cli, TROPIC_PRIVILEGED_PAIRING_KEY_SLOT);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR,
-              "`tropic_custom_session_start()` failed for privileged key with "
+              "`tropic_custom_session_start()` for privileged key failed with "
               "error '%s'",
               lt_ret_verbose(ret));
     return;
@@ -1480,7 +1479,7 @@ static void cert_read(cli_t* cli, uint16_t first_slot, uint16_t slots_count) {
       tropic_custom_session_start(cli, TROPIC_PRIVILEGED_PAIRING_KEY_SLOT);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR,
-              "`tropic_custom_session_start()` failed for privileged key with "
+              "`tropic_custom_session_start()` for privileged key failed with "
               "error '%s'",
               lt_ret_verbose(ret));
     return;
@@ -1528,7 +1527,7 @@ static void pubkey_read(cli_t* cli, lt_ecc_slot_t slot,
       tropic_custom_session_start(cli, TROPIC_PRIVILEGED_PAIRING_KEY_SLOT);
   if (ret != LT_OK) {
     cli_error(cli, CLI_ERROR,
-              "`tropic_custom_session_start()` failed for privileged key with "
+              "`tropic_custom_session_start()` for privileged key failed with "
               "error '%s'",
               lt_ret_verbose(ret));
     return;
@@ -1759,10 +1758,10 @@ static void prodtest_tropic_stress_test(cli_t* cli) {
       break;
     }
     if (res != LT_L2_HSK_ERR) {
-      cli_error(cli, CLI_ERROR,
-                "`tropic_custom_session_start()` failed for key %d with error "
-                "'%s'",
-                i, lt_ret_verbose(res));
+      cli_error(
+          cli, CLI_ERROR,
+          "`tropic_custom_session_start() for key %d failed with error '%s'", i,
+          lt_ret_verbose(res));
       return;
     }
   }
@@ -1787,8 +1786,8 @@ static void prodtest_tropic_stress_test(cli_t* cli) {
     res = tropic_custom_session_start(cli, pairing_key_index);
     if (res != LT_OK) {
       cli_error(cli, CLI_ERROR,
-                "Call #%d of `tropic_custom_session_start()` failed with "
-                "error '%s'",
+                "Call #%d of `tropic_custom_session_start()"
+                "failed with error '%s'",
                 i + 1, lt_ret_verbose(res));
       return;
     }
