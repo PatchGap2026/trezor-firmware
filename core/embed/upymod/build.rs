@@ -168,7 +168,7 @@ fn main() -> Result<()> {
                 "py/modstruct.c",
                 "py/modsys.c",
                 "py/modthread.c",
-                "py/moduerrno.c",
+                "py/moderrno.c",
                 "py/mpprint.c",
                 "py/mpstate.c",
                 "py/mpz.c",
@@ -252,7 +252,7 @@ fn main() -> Result<()> {
                 mpy_dir,
                 [
                     "extmod/vfs_posix_file.c",
-                    "extmod/moduos.c",
+                    "extmod/modos.c",
                     "py/emitnarm.c",
                     "py/emitnative.c",
                     "py/emitnthumb.c",
