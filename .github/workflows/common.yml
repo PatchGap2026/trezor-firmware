@@ -124,6 +124,7 @@ jobs:
       - run: mkdir _artifacts/
 
       - name: Build prodtest & bootloader
+        if: ${{ matrix.model != 'T1B1' }}
         run: |
           ./build-docker.sh --models ${{ matrix.model }} --targets 'prodtest,bootloader' --skip-bitcoinonly ${REF}
           cd build/ && cp -v --recursive --parents * ../_artifacts/
@@ -135,9 +136,10 @@ jobs:
           cd build/ && cp -v --recursive --parents * ../_artifacts/
 
       - name: Build firmware
-        # T3W1 requires a signed secmon.
+        # T3W1 requires a signed secmon. For T1B1 this is the first (and only)
+        # build step, so it initializes the environment instead of reusing one.
         run: |
-          ./build-docker.sh --no-init --models ${{ matrix.model }} --targets 'firmware' ${REF}
+          ./build-docker.sh ${{ matrix.model != 'T1B1' && '--no-init' || '' }} --models ${{ matrix.model }} --targets 'firmware' ${REF}
           cd build/ && cp -v --recursive --parents * ../_artifacts/
 
       - name: Show fingerprints
