@@ -83,6 +83,9 @@ class ThpContext:
                     log.exception(__name__, exc)
 
 
+import utime
+start = utime.ticks_ms()
+
 class InterfaceContext:
     """
     This class shuffles packets between an interface and non-blocking rust/trezor-thp code.
@@ -167,7 +170,7 @@ class InterfaceContext:
             assert packet_len == self._iface.RX_PACKET_LEN
 
             self._iface.read(packet_buffer, 0)
-            if __debug__ and _TRACE:
+            if __debug__:
                 log.debug(
                     __name__,
                     f"read: {utils.hexlify_if_bytes(packet_buffer)}",
@@ -286,6 +289,7 @@ class InterfaceContext:
         # active channel
         if self.active_channel:
             while self.active_channel.write_packet(packet_buffer):
+                yield from loop.sleep(100)
                 yield from self.write_packet(packet_buffer)
         # transport_busy for currently inactive channels
         while self.inactive_channels:
@@ -295,7 +299,7 @@ class InterfaceContext:
         self.inactive_channels.clear()
 
     def write_packet(self, packet_buffer: AnyBytes) -> Generator[Any, Any, None]:
-        if __debug__ and _TRACE:
+        if __debug__:
             log.debug(
                 __name__,
                 f"write: {utils.hexlify_if_bytes(packet_buffer)}",
