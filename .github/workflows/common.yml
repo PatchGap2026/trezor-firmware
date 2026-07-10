@@ -148,7 +148,7 @@ jobs:
           tree _artifacts
           COMMIT_HASH=$(git rev-parse HEAD)
           fingerprints_file="_artifacts/${COMMIT_HASH}.fingerprints"
-          master_file="_artifacts/$(git rev-parse HEAD).master"
+          master_file="_artifacts/${COMMIT_HASH}.master"
           if [ -f "$fingerprints_file" ]; then
             {
               echo '```'
