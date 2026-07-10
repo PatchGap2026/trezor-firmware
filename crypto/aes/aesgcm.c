@@ -20,9 +20,9 @@ Issue Date: 30/03/2011
  My thanks to:
 
    Colin Sinclair for finding an error and suggesting a number of
-   improvements to this code. 
- 
-   John Viega and David McGrew for their support in the development 
+   improvements to this code.
+
+   John Viega and David McGrew for their support in the development
    of this code and to David for testing it on a big-endIAN system.
 
    Mark Rodenkirch and Jason Papadopoulos for their help in finding
@@ -68,7 +68,7 @@ Issue Date: 30/03/2011
 
     then an appropriate change of representation will occur before and
     after calls to your revised field multiplier. To use this you need
-    to add gf_convert.c to your application.  
+    to add gf_convert.c to your application.
 */
 
 #if defined(__cplusplus)
@@ -164,6 +164,11 @@ ret_type gcm_init_message(                  /* initialise a new message     */
             gcm_ctx ctx[1])                 /* the mode context             */
 {   uint32_t i = 0, n_pos = 0;
     uint8_t *p = NULL;
+
+    /* NIST SP 800-38D, Section 5.2.1.1 forbids IV length of 0 */
+    /* https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf */
+    if(iv_len == 0)
+        return RETURN_ERROR;
 
     memset(ctx->ctr_val, 0, BLOCK_SIZE);
     if(iv_len == CTR_POS)
@@ -440,7 +445,7 @@ ret_type gcm_compute_tag(                   /* compute authentication tag   */
         }
     }
 
-    i = BLOCK_SIZE; 
+    i = BLOCK_SIZE;
 #ifdef BRG_UI64
     {   uint64_t tm = ((uint64_t)ctx->txt_acnt) << 3;
         while(i-- > 0)
@@ -449,7 +454,7 @@ ret_type gcm_compute_tag(                   /* compute authentication tag   */
             tm = (i == 8 ? (((uint64_t)ctx->hdr_cnt) << 3) : tm >> 8);
         }
     }
-#else   
+#else
     {   uint32_t tm = ctx->txt_acnt << 3;
 
         while(i-- > 0)
@@ -517,7 +522,8 @@ ret_type gcm_encrypt_message(               /* encrypt an entire message    */
             unsigned long tag_len,          /* and its length in bytes      */
             gcm_ctx ctx[1])                 /* the mode context             */
 {
-    gcm_init_message(iv, iv_len, ctx);
+    if(gcm_init_message(iv, iv_len, ctx) != RETURN_GOOD)
+        return RETURN_ERROR;
     gcm_auth_header(hdr, hdr_len, ctx);
     gcm_encrypt(msg, msg_len, ctx);
     return gcm_compute_tag(tag, tag_len, ctx) ? RETURN_ERROR : RETURN_GOOD;
@@ -536,7 +542,8 @@ ret_type gcm_decrypt_message(               /* decrypt an entire message    */
 {   uint8_t local_tag[BLOCK_SIZE] = {0};
     ret_type rr = 0;
 
-    gcm_init_message(iv, iv_len, ctx);
+    if(gcm_init_message(iv, iv_len, ctx) != RETURN_GOOD)
+        return RETURN_ERROR;
     gcm_auth_header(hdr, hdr_len, ctx);
     gcm_decrypt(msg, msg_len, ctx);
     rr = gcm_compute_tag(local_tag, tag_len, ctx);
