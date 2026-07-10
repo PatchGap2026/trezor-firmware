@@ -145,7 +145,8 @@ jobs:
       - name: Show fingerprints
         run: |
           tree _artifacts
-          fingerprints_file="_artifacts/$(git rev-parse HEAD).fingerprints"
+          COMMIT_HASH=$(git rev-parse HEAD)
+          fingerprints_file="_artifacts/${COMMIT_HASH}.fingerprints"
           master_file="_artifacts/$(git rev-parse HEAD).master"
           if [ -f "$fingerprints_file" ]; then
             {
