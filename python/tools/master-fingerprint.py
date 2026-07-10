@@ -75,7 +75,7 @@ def master_fingerprint(fingerprints: set[ArtefactFingerprint]) -> bytes:
     ctx = hashlib.sha256()
     for model, purpose, fingerprint in sorted(fingerprints):
         ctx.update(model.to_bytes(4, "little"))
-        ctx.update(bytes([purpose]))
+        ctx.update(purpose.to_bytes(1, "little")))
         ctx.update(fingerprint)
     return ctx.digest()
 
