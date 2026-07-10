@@ -130,12 +130,12 @@ def validate_date(date: str, project: Path) -> None:
         "December",
     )
     _DATE_DAY_SUFFIX_RE = re.compile(
-        r"^(\d{1,2})(st|nd|rd|th) (" + "|".join(_MONTHS) + r") \d{4}$"
+        r"^([1-9]|[12][0-9]|3[01])(st|nd|rd|th) (" + "|".join(_MONTHS) + r") \d{4}$"
     )
     m = _DATE_DAY_SUFFIX_RE.match(date)
     if not m:
         raise click.BadParameter(
-            "Expected format: '18th March 2026'.", param_hint="'--date'"
+            "Expected format: '18th March 2026'.", param_hint="--date"
         )
     day = int(m.group(1))
     suffix = m.group(2)
@@ -143,7 +143,7 @@ def validate_date(date: str, project: Path) -> None:
     if suffix != expected_suffix:
         raise click.BadParameter(
             f"Invalid day suffix '{day}{suffix}', expected '{day}{expected_suffix}'.",
-            param_hint="'--date'",
+            param_hint="--date",
         )
 
 
