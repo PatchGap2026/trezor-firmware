@@ -21,102 +21,84 @@ if not utils.BITCOIN_ONLY:
 class TestStellarFormatIntegers(unittest.TestCase):
     def test_format_u128(self):
         TESTS = [
-            (StellarUInt128Parts(hi=0, lo=0), "0"),
-            (StellarUInt128Parts(hi=0, lo=1), "1"),
-            (StellarUInt128Parts(hi=1, lo=0), str(2**64)),
-            (
-                StellarUInt128Parts(hi=0xFFFFFFFFFFFFFFFF, lo=0xFFFFFFFFFFFFFFFF),
-                str(2**128 - 1),
-            ),
+            ((0, 0), "0"),
+            ((0, 1), "1"),
+            ((1, 0), str(2**64)),
+            ((0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF), str(2**128 - 1)),
         ]
-        for parts, expected in TESTS:
-            self.assertEqual(_format_u128(parts), expected)
+        for (hi, lo), expected in TESTS:
+            self.assertEqual(_format_u128(StellarUInt128Parts(hi=hi, lo=lo)), expected)
 
     def test_format_i128(self):
         TESTS = [
-            (StellarInt128Parts(hi=0, lo=0), "0"),
-            (StellarInt128Parts(hi=0, lo=1), "1"),
-            (StellarInt128Parts(hi=-1, lo=0xFFFFFFFFFFFFFFFF), "-1"),
-            (StellarInt128Parts(hi=1, lo=0), str(2**64)),
-            (StellarInt128Parts(hi=-1, lo=0), str(-(2**64))),
-            (
-                StellarInt128Parts(hi=0x7FFFFFFFFFFFFFFF, lo=0xFFFFFFFFFFFFFFFF),
-                str(2**127 - 1),
-            ),
-            (StellarInt128Parts(hi=-0x8000000000000000, lo=0), str(-(2**127))),
+            ((0, 0), "0"),
+            ((0, 1), "1"),
+            ((-1, 0xFFFFFFFFFFFFFFFF), "-1"),
+            ((1, 0), str(2**64)),
+            ((-1, 0), str(-(2**64))),
+            ((0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF), str(2**127 - 1)),
+            ((-0x8000000000000000, 0), str(-(2**127))),
         ]
-        for parts, expected in TESTS:
-            self.assertEqual(_format_i128(parts), expected)
+        for (hi, lo), expected in TESTS:
+            self.assertEqual(_format_i128(StellarInt128Parts(hi=hi, lo=lo)), expected)
 
     def test_format_u256(self):
         TESTS = [
-            (StellarUInt256Parts(hi_hi=0, hi_lo=0, lo_hi=0, lo_lo=0), "0"),
-            (StellarUInt256Parts(hi_hi=0, hi_lo=0, lo_hi=0, lo_lo=1), "1"),
-            (StellarUInt256Parts(hi_hi=0, hi_lo=0, lo_hi=1, lo_lo=0), str(2**64)),
-            (StellarUInt256Parts(hi_hi=0, hi_lo=1, lo_hi=0, lo_lo=0), str(2**128)),
-            (StellarUInt256Parts(hi_hi=1, hi_lo=0, lo_hi=0, lo_lo=0), str(2**192)),
+            ((0, 0, 0, 0), "0"),
+            ((0, 0, 0, 1), "1"),
+            ((0, 0, 1, 0), str(2**64)),
+            ((0, 1, 0, 0), str(2**128)),
+            ((1, 0, 0, 0), str(2**192)),
             (
-                StellarUInt256Parts(
-                    hi_hi=0xFFFFFFFFFFFFFFFF,
-                    hi_lo=0xFFFFFFFFFFFFFFFF,
-                    lo_hi=0xFFFFFFFFFFFFFFFF,
-                    lo_lo=0xFFFFFFFFFFFFFFFF,
+                (
+                    0xFFFFFFFFFFFFFFFF,
+                    0xFFFFFFFFFFFFFFFF,
+                    0xFFFFFFFFFFFFFFFF,
+                    0xFFFFFFFFFFFFFFFF,
                 ),
                 str(2**256 - 1),
             ),
         ]
-        for parts, expected in TESTS:
+        for (hi_hi, hi_lo, lo_hi, lo_lo), expected in TESTS:
+            parts = StellarUInt256Parts(
+                hi_hi=hi_hi, hi_lo=hi_lo, lo_hi=lo_hi, lo_lo=lo_lo
+            )
             self.assertEqual(_format_u256(parts), expected)
 
     def test_format_i256(self):
         TESTS = [
-            (StellarInt256Parts(hi_hi=0, hi_lo=0, lo_hi=0, lo_lo=0), "0"),
-            (StellarInt256Parts(hi_hi=0, hi_lo=0, lo_hi=0, lo_lo=1), "1"),
+            ((0, 0, 0, 0), "0"),
+            ((0, 0, 0, 1), "1"),
             (
-                StellarInt256Parts(
-                    hi_hi=-1,
-                    hi_lo=0xFFFFFFFFFFFFFFFF,
-                    lo_hi=0xFFFFFFFFFFFFFFFF,
-                    lo_lo=0xFFFFFFFFFFFFFFFF,
+                (
+                    -1,
+                    0xFFFFFFFFFFFFFFFF,
+                    0xFFFFFFFFFFFFFFFF,
+                    0xFFFFFFFFFFFFFFFF,
                 ),
                 "-1",
             ),
-            (StellarInt256Parts(hi_hi=0, hi_lo=0, lo_hi=1, lo_lo=0), str(2**64)),
+            ((0, 0, 1, 0), str(2**64)),
+            ((-1, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0), str(-(2**64))),
+            ((0, 1, 0, 0), str(2**128)),
+            ((-1, 0xFFFFFFFFFFFFFFFF, 0, 0), str(-(2**128))),
+            ((1, 0, 0, 0), str(2**192)),
+            ((-1, 0, 0, 0), str(-(2**192))),
             (
-                StellarInt256Parts(
-                    hi_hi=-1,
-                    hi_lo=0xFFFFFFFFFFFFFFFF,
-                    lo_hi=0xFFFFFFFFFFFFFFFF,
-                    lo_lo=0,
-                ),
-                str(-(2**64)),
-            ),
-            (StellarInt256Parts(hi_hi=0, hi_lo=1, lo_hi=0, lo_lo=0), str(2**128)),
-            (
-                StellarInt256Parts(
-                    hi_hi=-1, hi_lo=0xFFFFFFFFFFFFFFFF, lo_hi=0, lo_lo=0
-                ),
-                str(-(2**128)),
-            ),
-            (StellarInt256Parts(hi_hi=1, hi_lo=0, lo_hi=0, lo_lo=0), str(2**192)),
-            (StellarInt256Parts(hi_hi=-1, hi_lo=0, lo_hi=0, lo_lo=0), str(-(2**192))),
-            (
-                StellarInt256Parts(
-                    hi_hi=0x7FFFFFFFFFFFFFFF,
-                    hi_lo=0xFFFFFFFFFFFFFFFF,
-                    lo_hi=0xFFFFFFFFFFFFFFFF,
-                    lo_lo=0xFFFFFFFFFFFFFFFF,
+                (
+                    0x7FFFFFFFFFFFFFFF,
+                    0xFFFFFFFFFFFFFFFF,
+                    0xFFFFFFFFFFFFFFFF,
+                    0xFFFFFFFFFFFFFFFF,
                 ),
                 str(2**255 - 1),
             ),
-            (
-                StellarInt256Parts(
-                    hi_hi=-0x8000000000000000, hi_lo=0, lo_hi=0, lo_lo=0
-                ),
-                str(-(2**255)),
-            ),
+            ((-0x8000000000000000, 0, 0, 0), str(-(2**255))),
         ]
-        for parts, expected in TESTS:
+        for (hi_hi, hi_lo, lo_hi, lo_lo), expected in TESTS:
+            parts = StellarInt256Parts(
+                hi_hi=hi_hi, hi_lo=hi_lo, lo_hi=lo_hi, lo_lo=lo_lo
+            )
             self.assertEqual(_format_i256(parts), expected)
 
 
