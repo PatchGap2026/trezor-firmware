@@ -2,12 +2,23 @@
 from common import *  # isort:skip
 
 if not utils.BITCOIN_ONLY:
-    from trezor.enums import StellarSCValType
+    from trezor.enums import (
+        StellarHostFunctionType,
+        StellarSCValType,
+        StellarSorobanAuthorizedFunctionType,
+        StellarSorobanCredentialsType,
+    )
     from trezor.messages import (
+        StellarHostFunction,
         StellarInt128Parts,
         StellarInt256Parts,
+        StellarInvokeContractArgs,
         StellarSCVal,
         StellarSCValMapEntry,
+        StellarSorobanAuthorizationEntry,
+        StellarSorobanAuthorizedFunction,
+        StellarSorobanAuthorizedInvocation,
+        StellarSorobanCredentials,
         StellarUInt128Parts,
         StellarUInt256Parts,
     )
@@ -18,10 +29,14 @@ if not utils.BITCOIN_ONLY:
         _format_sc_val,
         _format_u128,
         _format_u256,
+        _is_root_auth_entry,
     )
 
     def _u32(value):
         return StellarSCVal(type=StellarSCValType.SCV_U32, u32=value)
+
+    def _u64(value):
+        return StellarSCVal(type=StellarSCValType.SCV_U64, u64=value)
 
     def _bytes(value):
         return StellarSCVal(type=StellarSCValType.SCV_BYTES, bytes=value)
@@ -187,6 +202,50 @@ class TestStellarFormatScVal(unittest.TestCase):
         ]
         for entries, expected in TESTS:
             self.assertEqual(_format_sc_val(_map(entries)), expected)
+
+
+# valid contract (C...) strkeys, see test_apps.stellar.address.py for the format
+_CONTRACT_A = "CAAACAQDAQCQMBYIBEFAWDANBYHRAEISCMKBKFQXDAMRUGY4DUPB6N4O"
+_CONTRACT_B = "CBSGKZTHNBUWU23MNVXG64DROJZXI5LWO54HS6T3PR6X474AQGBIHDKP"
+
+
+@unittest.skipUnless(not utils.BITCOIN_ONLY, "altcoin")
+class TestStellarIsRootAuthEntry(unittest.TestCase):
+    def test_is_root_auth_entry(self):
+        invoked = StellarHostFunction(
+            type=StellarHostFunctionType.HOST_FUNCTION_TYPE_INVOKE_CONTRACT,
+            invoke_contract=StellarInvokeContractArgs(
+                contract_address=_CONTRACT_A, function_name="submit", args=[_u32(1)]
+            ),
+        )
+
+        TESTS = [
+            ((_CONTRACT_A, "submit", [_u32(1)]), True),  # identical
+            ((_CONTRACT_A, "submit", [_u32(2)]), False),  # different arg value
+            ((_CONTRACT_A, "submit", [_u64(1)]), False),  # different arg type
+            ((_CONTRACT_A, "submit", [_u32(1), _u32(1)]), False),  # extra arg
+            ((_CONTRACT_A, "submit", []), False),  # missing arg
+            ((_CONTRACT_A, "swap", [_u32(1)]), False),  # different function
+            ((_CONTRACT_B, "submit", [_u32(1)]), False),  # different contract
+        ]
+        for (contract, function, args), is_root in TESTS:
+            auth_entry = StellarSorobanAuthorizationEntry(
+                credentials=StellarSorobanCredentials(
+                    type=StellarSorobanCredentialsType.SOROBAN_CREDENTIALS_SOURCE_ACCOUNT
+                ),
+                root_invocation=StellarSorobanAuthorizedInvocation(
+                    function=StellarSorobanAuthorizedFunction(
+                        type=StellarSorobanAuthorizedFunctionType.SOROBAN_AUTHORIZED_FUNCTION_TYPE_CONTRACT_FN,
+                        contract_fn=StellarInvokeContractArgs(
+                            contract_address=contract,
+                            function_name=function,
+                            args=args,
+                        ),
+                    ),
+                    sub_invocations=[],
+                ),
+            )
+            self.assertEqual(_is_root_auth_entry(auth_entry, invoked), is_root)
 
 
 if __name__ == "__main__":
