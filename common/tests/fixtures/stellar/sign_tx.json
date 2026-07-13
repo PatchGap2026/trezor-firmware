@@ -1419,7 +1419,8 @@
       "result": {
         "public_key": "2f22b9c62f08b774f3ebe6dd6e7db93c3ec2cbde0279561a3d9c5225b8c32292",
         "signature": "D3dQu/hju9RPgHNb8Dwjl+Idx1HToY8MsVIUIk80hlEj2P473PSDf7PIYjBYZrb4FKDK6pE2yKapSwpGsRiUAA=="
-      }
+      },
+      "skip_models": ["t1b1"]
     },
     {
       "name": "StellarInvokeHostFunction-auth-tree",
@@ -1648,7 +1649,8 @@
       "result": {
         "public_key": "2f22b9c62f08b774f3ebe6dd6e7db93c3ec2cbde0279561a3d9c5225b8c32292",
         "signature": "/di5nlkauUooBg83iKXOkEWG1X1cQ4/IraU/dIx9a0vviKXMCRORXZm0vV2F9FG+1hKWcY3qCFDzdGKahzVWAA=="
-      }
+      },
+      "skip_models": ["t1b1"]
     }
   ]
 }
