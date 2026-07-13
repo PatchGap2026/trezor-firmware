@@ -329,9 +329,9 @@ def _write_sc_address(w: Writer, addr: str) -> None:
 def _write_sc_symbol(w: Writer, symbol: str) -> None:
     from .. import consts
 
-    if len(symbol) > consts.SCSYMBOL_MAX_SIZE:
+    written = write_string(w, symbol)
+    if written > consts.SCSYMBOL_MAX_SIZE:
         raise DataError("Stellar: symbol too long")
-    write_string(w, symbol)
 
 
 def _write_sc_val(w: Writer, msg: StellarSCVal) -> None:
