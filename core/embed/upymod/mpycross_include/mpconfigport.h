@@ -47,6 +47,10 @@
 #define MICROPY_EMIT_XTENSA (1)
 #define MICROPY_EMIT_INLINE_XTENSA (1)
 #define MICROPY_EMIT_XTENSAWIN (1)
+#define MICROPY_EMIT_RV32 (1)
+#define MICROPY_EMIT_INLINE_RV32 (1)
+#define MICROPY_EMIT_NATIVE_DEBUG (1)
+#define MICROPY_EMIT_NATIVE_DEBUG_PRINTER (&mp_stdout_print)
 
 #define MICROPY_DYNAMIC_COMPILER (1)
 #define MICROPY_COMP_CONST_FOLDING (1)
@@ -86,7 +90,7 @@
 #define MICROPY_GCREGS_SETJMP (1)
 #endif
 
-#define MICROPY_PY___FILE__ (0)
+#define MICROPY_PY_MODULE___FILE__ (0)
 #define MICROPY_PY_ARRAY (0)
 #define MICROPY_PY_ATTRTUPLE (0)
 #define MICROPY_PY_COLLECTIONS (0)
@@ -169,3 +173,5 @@ typedef int ssize_t;
 typedef mp_off_t off_t;
 
 #endif
+
+extern const struct _mp_print_t mp_stdout_print;

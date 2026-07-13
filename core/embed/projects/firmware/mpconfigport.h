@@ -200,12 +200,14 @@ typedef long mp_off_t;
 
 #define MICROPY_BEGIN_ATOMIC_SECTION()     (0)
 #define MICROPY_END_ATOMIC_SECTION(state)  (void)(state)
-#define MICROPY_EVENT_POLL_HOOK \
+#define MICROPY_EVENT_POLL_HOOK_FIXME \
     do { \
-        extern void mp_handle_pending(bool); \
-        mp_handle_pending(true); \
+        extern void mp_handle_pending(mp_handle_pending_behaviour_t); \
+        mp_handle_pending(MP_HANDLE_PENDING_CALLBACKS_AND_EXCEPTIONS); \
         __WFI(); \
     } while (0);
+
+#define MICROPY_EVENT_POLL_HOOK do {/*FIXME*/} while (0);
 
 #define MICROPY_HW_BOARD_NAME "TREZORv2"
 #define MICROPY_HW_MCU_NAME "STM32F427xx"
